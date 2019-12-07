@@ -3,20 +3,22 @@ from multiprocessing import Process, Queue
 import os
 import sys
 
-def tcp_listener(tcp_queue):
-    tcp_port = 8080
-
+def get_localip():
     #get local ip
     s = socket(AF_INET, SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
-
     localip = s.getsockname()[0]
-
     s.close()
+
+    return localip
+
+def tcp_listener(tcp_queue):
+    tcp_port = 8080
+    ip_list = []
 
     #bind to local address
     tcp_sock = socket(AF_INET, SOCK_STREAM)
-    tcp_sock.bind((localip, tcp_port))
+    tcp_sock.bind((get_localip(), tcp_port))
 
     #listen for incoming connections
     tcp_sock.listen(1)
@@ -30,20 +32,23 @@ def tcp_listener(tcp_queue):
             print(client_address)
 
             # Receive the data in small chunks and retransmit it
-            data = connection.recv(64)
-            data = data.decode()
+            data = connection.recv(64).decode()
             print('[TCP LISTENER] Received ', data)
-            # connection.send("HANDSHAKE FROM TTCP".encode())
+            
+            if data == "HANDSHAKE FROM UDP":
+                ip_list.append(client_address)
+
+            print(ip_list)
+            tcp_queue.put(ip_list)
+
 
         #close connection
         finally:
+            tcp_queue.put(ip_list)
             connection.close()
 
 def udp_listener(udp_queue):
     #set variables
-    #timeout_count = 0
-    # timeout_limit = 5
-    ip_list = []
     udp_port = 8000
     tcp_port = 8080
 
@@ -61,59 +66,35 @@ def udp_listener(udp_queue):
             print("[UDP LISTENER] ", end="")
             print(data.decode(), address)
 
-            # create
+            #send TCP handshake
             if (data.decode() != None):
-                #timeout_count = 0
-                ip_list.append(address[0])
-                tcp_sock = socket()
-                tcp_address = address[0]
+                if addres[0] != get_localip:
+                    tcp_sock = socket()
+                    tcp_address = address[0]
 
-                try:
-                    tcp_sock.connect((tcp_address, tcp_port)) 
+                    try:
+                        tcp_sock.connect((tcp_address, tcp_port)) 
+                        tcp_sock.send("HANDSHAKE FROM UDP".encode())
+
+                    #ip is offline
+                    except Exception as e:
+                        print("[UDP LISTENER] %s:%d: Exception %s" % (tcp_address, tcp_port, e))
                     
-                    #print("[UDP LISTENER] connect success")
-
-                    tcp_sock.send("HANDSHAKE FROM UDP".encode())
-                    # message = tcp_sock.recv(64).decode()
-
-                    # print("[UDP LISTENER] received ", message)
-
-                    # if message != "HANDSHAKE FROM TCP":
-                
-                #ip is offline
-                except Exception as e:
-                    print("[UDP LISTENER] %s:%d: Exception %s" % (tcp_address, tcp_port, e))
-                    ip_list.remove(tcp_address)
-                
-                finally:
-                    tcp_sock.close()  
-
-                udp_queue.put(ip_list)
+                    finally:
+                        tcp_sock.close()  
 
         #nothing received
-        except:
-            continue
-            # timeout_count = timeout_count + 1
-
-        # finally:
-        #     #print("[LISTENER] timeout " + str(timeout_count))
-        #     if timeout_count == timeout_limit:
-        #         #print("[LISTENER] closed")
-                
-        #         print("[LISTENER] closed, IP list: ", end="")
-        #         print(ip_list)
-                
-        #         pipe.put("Done")
-        #         #break
+        except Exception as e:
+            print("[UDP LISTENER] Exception %s" % e)
 
 #prunes ip list
-def check_iplist(q_listener):
+def check_iplist(queue):
 
     tcp_port = 8080
 
     #check if IPs are active
     try:
-        data = q_listener.get(False)  
+        data = queue.get(False)  
 
         if (data != "Done"):
             ip_list = data
@@ -128,7 +109,7 @@ def check_iplist(q_listener):
             #ip is offline
             except:
                 #print("%s:%d: Exception is %s" % (address, port, e))
-                #ip_list.remove(ip)
+                ip_list.remove(ip)
                 pass
             
             finally:
@@ -182,7 +163,7 @@ if __name__ == '__main__':
 
         #send file - NOT DONE
         if (option == 1):
-            ip_list = check_iplist(q_udp_listener)
+            ip_list = check_iplist(q_tcp_listener)
 
             #empty IP list
             if not ip_list:
@@ -225,7 +206,7 @@ if __name__ == '__main__':
 
             udp_brodcast()
 
-            ip_list = check_iplist(q_udp_listener)
+            ip_list = check_iplist(q_tcp_listener)
 
             if not ip_list:
                 ip_list = []
