@@ -68,7 +68,7 @@ def udp_listener(udp_queue):
 
             #send TCP handshake
             if (data.decode() != None):
-                if addres[0] != get_localip:
+                if address[0] != get_localip:
                     tcp_sock = socket()
                     tcp_address = address[0]
 
