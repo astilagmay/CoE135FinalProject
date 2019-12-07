@@ -62,7 +62,9 @@ def udp_listener(udp_queue):
 
                 try:
                     tcp_sock.connect((tcp_address, tcp_port)) 
-                    print("[UDP LISTENER] connect success")
+                    
+                    #print("[UDP LISTENER] connect success")
+
                     tcp_sock.send("HANDSHAKE".encode())
                     message = tcp_sock.recv(16)
 
