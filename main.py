@@ -24,7 +24,7 @@ def tcp_listener(tcp_queue):
             # Receive the data in small chunks and retransmit it
             data = connection.recv(16)
             data = data.decode()
-            print('\n[TCP LISTENER] received %s')
+            print('\n[TCP LISTENER] received ', data)
             connection.send("HANDSHAKE".encode())
 
         #close connection
@@ -64,7 +64,9 @@ def udp_listener(udp_queue):
                     tcp_sock.connect((tcp_address, tcp_port)) 
                     print("[UDP LISTENER] connect success")
                     tcp_sock.send("HANDSHAKE".encode())
-                    message = tcp_sock.recv()
+                    message = tcp_sock.recv(16)
+
+                    print("[UDP LISTENER] received ", message)
 
                     if message != "HANDSHAKE":
                         ip_list.remove(tcp_address)
