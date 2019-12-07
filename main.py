@@ -30,7 +30,7 @@ def tcp_listener(tcp_queue):
             print(client_address)
 
             # Receive the data in small chunks and retransmit it
-            data = connection.recv(16)
+            data = connection.recv(64)
             data = data.decode()
             print('[TCP LISTENER] Received ', data)
             connection.send("HANDSHAKE FROM TCP".encode())
@@ -74,7 +74,7 @@ def udp_listener(udp_queue):
                     #print("[UDP LISTENER] connect success")
 
                     tcp_sock.send("HANDSHAKE FROM UDP".encode())
-                    message = tcp_sock.recv(16)
+                    message = tcp_sock.recv(64).decode()
 
                     print("[UDP LISTENER] received ", message)
 
@@ -212,25 +212,6 @@ if __name__ == '__main__':
                     #initial handshake
                     try:
                         tcp_sock.connect((address, tcp_port)) 
-
-                        try:
-                            # Send data
-                            message = "This is the message.  It will be repeated."
-                            print ("[MAIN] sending %s' % message")
-                            tcp_sock.sendall(message)
-
-                            # Look for the response
-                            amount_received = 0
-                            amount_expected = len(message)
-                            
-                            while amount_received < amount_expected:
-                                data = tcp_sock.recv(16)
-                                amount_received += len(data)
-                                print('[MAIN] received "%s"' % data)
-
-                        finally:
-                            print('[MAIN] closing socket')
-                            tcp_sock.close()
 
                     #ip is offline
                     except:
