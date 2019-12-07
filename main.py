@@ -6,9 +6,17 @@ import sys
 def tcp_listener(tcp_queue):
     tcp_port = 8080
 
+    #get local ip
+    s = socket(AF_INET, SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+
+    localip = s.getsockname()[0]
+
+    s.close()
+
     #bind to local address
     tcp_sock = socket(AF_INET, SOCK_STREAM)
-    tcp_sock.bind(('', tcp_port))
+    tcp_sock.bind((localip, tcp_port))
 
     #listen for incoming connections
     tcp_sock.listen(1)
@@ -24,8 +32,8 @@ def tcp_listener(tcp_queue):
             # Receive the data in small chunks and retransmit it
             data = connection.recv(16)
             data = data.decode()
-            print('\n[TCP LISTENER] received ', data)
-            connection.send("HANDSHAKE".encode())
+            print('[TCP LISTENER] Received ', data)
+            connection.send("HANDSHAKE FROM TCP".encode())
 
         #close connection
         finally:
@@ -65,12 +73,12 @@ def udp_listener(udp_queue):
                     
                     #print("[UDP LISTENER] connect success")
 
-                    tcp_sock.send("HANDSHAKE".encode())
+                    tcp_sock.send("HANDSHAKE FROM UDP".encode())
                     message = tcp_sock.recv(16)
 
                     print("[UDP LISTENER] received ", message)
 
-                    if message != "HANDSHAKE":
+                    if message != "HANDSHAKE FROM TCP":
                         ip_list.remove(tcp_address)
                 
                 #ip is offline
