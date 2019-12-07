@@ -44,6 +44,7 @@ def udp_listener(udp_queue):
     # timeout_limit = 5
     ip_list = []
     udp_port = 8000
+    tcp_port = 8080
 
     #bind to local address
     udp_sock = socket(AF_INET, SOCK_DGRAM)
@@ -63,6 +64,21 @@ def udp_listener(udp_queue):
             if (data.decode() != None):
                 #timeout_count = 0
                 ip_list.append(address[0])
+                tcp_sock = socket()
+                address = address[0]
+
+                try:
+                    tcp_sock.connect((address, tcp_port)) 
+                
+                #ip is offline
+                except:
+                    #print("%s:%d: Exception is %s" % (address, port, e))
+                    ip_list.remove(ip)
+                    pass
+                
+                finally:
+                    tcp_sock.close()  
+
                 udp_queue.put(ip_list)
 
         #nothing received
@@ -115,6 +131,13 @@ def check_iplist(q_listener):
         # print("\n[MAIN] IP list is empty\n")
 
     return ip_list
+
+def udp_brodcast():
+    udp_port = 8000
+    bsocket = socket(AF_INET, SOCK_DGRAM)
+    bsocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+    bsocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    bsocket.sendto('UDP Broadcast'.encode(), ('255.255.255.255', udp_port))
 
 if __name__ == '__main__':
 
@@ -209,6 +232,9 @@ if __name__ == '__main__':
 
         #view network IPs - NOT DONE
         elif (option == 2):
+
+            udp_brodcast()
+
             ip_list = check_iplist(q_udp_listener)
 
             if not ip_list:
