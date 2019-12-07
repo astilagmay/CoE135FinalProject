@@ -162,6 +162,7 @@ if __name__ == '__main__':
             print("\nChoose file/s to transfer, type \"All\" to transfer all files or \"Done\" when finished:")
             
             print("[FILE LIST]")
+            os.chdir("..")
             files = [f for f in os.listdir('./Files')]
             files.remove(".DS_Store")
 
