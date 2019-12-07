@@ -33,7 +33,7 @@ def tcp_listener(tcp_queue):
             data = connection.recv(64)
             data = data.decode()
             print('[TCP LISTENER] Received ', data)
-            connection.send("HANDSHAKE FROM TCP".encode())
+            # connection.send("HANDSHAKE FROM TTCP".encode())
 
         #close connection
         finally:
@@ -74,12 +74,11 @@ def udp_listener(udp_queue):
                     #print("[UDP LISTENER] connect success")
 
                     tcp_sock.send("HANDSHAKE FROM UDP".encode())
-                    message = tcp_sock.recv(64).decode()
+                    # message = tcp_sock.recv(64).decode()
 
-                    print("[UDP LISTENER] received ", message)
+                    # print("[UDP LISTENER] received ", message)
 
-                    if message != "HANDSHAKE FROM TCP":
-                        ip_list.remove(tcp_address)
+                    # if message != "HANDSHAKE FROM TCP":
                 
                 #ip is offline
                 except Exception as e:
