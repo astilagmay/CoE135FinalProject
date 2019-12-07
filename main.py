@@ -8,31 +8,24 @@ def tcp_listener(tcp_queue):
 
     #bind to local address
     tcp_sock = socket(AF_INET, SOCK_STREAM)
-    tcp_sock.bind(("127.0.0.1", tcp_port))
+    tcp_sock.bind(('', tcp_port))
 
     #listen for incoming connections
     tcp_sock.listen(1)
 
     while True:
-        print("\n[TCP LISTENER] waiting for a connection")
+        print("\n[TCP LISTENER] Waiting for a connection")
         connection, client_address = tcp_sock.accept()
 
         try:
-            print("Connection from ", end="")
+            print("\n[TCP LISTENER] Connection from ", end="")
             print(client_address)
 
             # Receive the data in small chunks and retransmit it
-            while True:
-                data = connection.recv(16)
-                print('received "%s"' % data)
-                
-                if data:
-                    print >>sys.stderr, 'sending data back to the client'
-                    connection.sendall(data)
-                
-                else:
-                    print >>sys.stderr, 'no more data from', client_address
-                    break
+            data = connection.recv(16)
+            data = data.decode()
+            print('\n[TCP LISTENER] received %s')
+            connection.send("HANDSHAKE".encode)
 
         #close connection
         finally:
@@ -57,7 +50,7 @@ def udp_listener(udp_queue):
         try:
             data, address = udp_sock.recvfrom(64)
             #print data
-            print("[LISTENER] ", end="")
+            print("[UDP LISTENER] ", end="")
             print(data.decode(), address)
 
             # create
@@ -65,16 +58,21 @@ def udp_listener(udp_queue):
                 #timeout_count = 0
                 ip_list.append(address[0])
                 tcp_sock = socket()
-                address = address[0]
+                tcp_address = address[0]
 
                 try:
-                    tcp_sock.connect((address, tcp_port)) 
+                    tcp_sock.connect((tcp_address, tcp_port)) 
+                    print("[UDP LISTENER] connect success")
+                    tcp_sock.send("HANDSHAKE".encode())
+                    message = tcp_sock.recv()
+
+                    if message != "HANDSHAKE":
+                        ip_list.remove(tcp_address)
                 
                 #ip is offline
-                except:
-                    #print("%s:%d: Exception is %s" % (address, port, e))
-                    ip_list.remove(ip)
-                    pass
+                except Exception as e:
+                    print("[UDP LISTENER] %s:%d: Exception %s" % (tcp_address, tcp_port, e))
+                    ip_list.remove(tcp_address)
                 
                 finally:
                     tcp_sock.close()  
@@ -199,13 +197,14 @@ if __name__ == '__main__':
                     tcp_sock = socket()
                     address = ip_list[ip_choice]
 
+                    #initial handshake
                     try:
                         tcp_sock.connect((address, tcp_port)) 
 
                         try:
                             # Send data
-                            message = 'This is the message.  It will be repeated.'
-                            print >>sys.stderr, 'sending "%s"' % message
+                            message = "This is the message.  It will be repeated."
+                            print ("[MAIN] sending %s' % message")
                             tcp_sock.sendall(message)
 
                             # Look for the response
@@ -215,13 +214,12 @@ if __name__ == '__main__':
                             while amount_received < amount_expected:
                                 data = tcp_sock.recv(16)
                                 amount_received += len(data)
-                                print >>sys.stderr, 'received "%s"' % data
+                                print('[MAIN] received "%s"' % data)
 
                         finally:
-                            print >>sys.stderr, 'closing socket'
+                            print('[MAIN] closing socket')
                             tcp_sock.close()
 
-                    
                     #ip is offline
                     except:
                         print("%s:%d: Exception" % (address, tcp_port))
