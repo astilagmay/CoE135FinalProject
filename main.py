@@ -25,7 +25,7 @@ def tcp_listener(tcp_queue):
             data = connection.recv(16)
             data = data.decode()
             print('\n[TCP LISTENER] received %s')
-            connection.send("HANDSHAKE".encode)
+            connection.send("HANDSHAKE".encode())
 
         #close connection
         finally:
