@@ -222,7 +222,7 @@ if __name__ == '__main__':
                     #ip is offline
                     except Exception as e:
                         print("%s is no longer online" % address)
-                        print("%s:%d: Exception %s" % (address, tcp_port, e))
+                        #print("%s:%d: Exception %s" % (address, tcp_port, e))
                     
                     finally:
                         tcp_sock.close()  
