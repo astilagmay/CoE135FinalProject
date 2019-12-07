@@ -3,6 +3,7 @@ from multiprocessing import Process, Queue
 import os
 import sys
 
+#gets local ip
 def get_localip():
     #get local ip
     s = socket(AF_INET, SOCK_DGRAM)
@@ -12,6 +13,10 @@ def get_localip():
 
     return localip
 
+def tcp_transfer():
+    pass
+
+#constant tcp listener
 def tcp_listener(tcp_queue):
     tcp_port = 8080
     ip_list = []
@@ -24,7 +29,7 @@ def tcp_listener(tcp_queue):
     tcp_sock.listen(1)
 
     while True:
-        print("\n[TCP LISTENER] Waiting for a connection")
+        #print("\n[TCP LISTENER] Waiting for a connection")
         connection, client_address = tcp_sock.accept()
 
         try:
@@ -36,9 +41,11 @@ def tcp_listener(tcp_queue):
             print('[TCP LISTENER] Received ', data)
             
             if data == "HANDSHAKE FROM UDP":
-                ip_list.append(client_address)
+                ip_list.append(client_address[0])
 
-            print(ip_list)
+            elif "FILE TRANSFER" in data:
+                print("preparing for ", data)
+
             tcp_queue.put(ip_list)
 
 
@@ -47,6 +54,7 @@ def tcp_listener(tcp_queue):
             tcp_queue.put(ip_list)
             connection.close()
 
+#constant listener for packets
 def udp_listener(udp_queue):
     #set variables
     udp_port = 8000
@@ -62,13 +70,16 @@ def udp_listener(udp_queue):
         #recieve broadcast packet
         try:
             data, address = udp_sock.recvfrom(64)
-            #print data
+
+            #ignore broadcast locally
+            if address[0] == get_localip():
+                continue
+
             print("[UDP LISTENER] ", end="")
             print(data.decode(), address)
 
             #send TCP handshake
             if (data.decode() != None):
-                if address[0] != get_localip:
                     tcp_sock = socket()
                     tcp_address = address[0]
 
@@ -87,42 +98,21 @@ def udp_listener(udp_queue):
         except Exception as e:
             print("[UDP LISTENER] Exception %s" % e)
 
-#prunes ip list
+#gets ip list from tcp listener subprocess
 def check_iplist(queue):
-
-    tcp_port = 8080
-
-    #check if IPs are active
     try:
-        data = queue.get(False)  
-
-        if (data != "Done"):
-            ip_list = data
-
-        for ip in ip_list:
-            tcp_sock = socket()
-            address = ip
-
-            try:
-                tcp_sock.connect((address, tcp_port)) 
-            
-            #ip is offline
-            except:
-                #print("%s:%d: Exception is %s" % (address, port, e))
-                ip_list.remove(ip)
-                pass
-            
-            finally:
-                tcp_sock.close()  
+        ip_list = queue.get(block = True, timeout = 1)  
 
     #queue is empty
     except:
+        print("[MAIN] check_iplist timed out")
         ip_list = []
         # print("\n[MAIN] IP list is empty\n")
 
     return ip_list
 
-def udp_brodcast():
+#sends broadcast packets
+def udp_broadcast():
     udp_port = 8000
     bsocket = socket(AF_INET, SOCK_DGRAM)
     bsocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -150,7 +140,9 @@ if __name__ == '__main__':
     p_udp.start() 
     p_tcp.start() 
 
+    #menu loop
     while(True):
+
         # print menu options
         print("Choose a command:")
         print("(1) Send file")
@@ -163,6 +155,39 @@ if __name__ == '__main__':
 
         #send file - NOT DONE
         if (option == 1):
+
+            file_list = []
+
+            #choose files in current directory
+            print("\nChoose file/s to transfer, type \"All\" to transfer all files or \"Done\" when finished:")
+            
+            print("[FILE LIST]")
+            files = [f for f in os.listdir('./Files')]
+            files.remove(".DS_Store")
+
+
+            for f in files:
+                print(f)
+
+            while True:
+                filename = input(": ")
+
+                if filename == "Done":
+                    break
+
+                elif filename == "All":
+                    file_list = files.copy()
+                    break
+
+                else:
+                    file_list.append(filename)
+
+            #print(file_list)
+
+            #broadcast to get active IPs
+            udp_broadcast()
+
+            #get ip list
             ip_list = check_iplist(q_tcp_listener)
 
             #empty IP list
@@ -189,29 +214,35 @@ if __name__ == '__main__':
                     tcp_sock = socket()
                     address = ip_list[ip_choice]
 
-                    #initial handshake
                     try:
-                        tcp_sock.connect((address, tcp_port)) 
+                        tcp_sock.connect((address, tcp_port))
+                        message = "FILE TRANSFER " + str(len(file_list))
+                        tcp_sock.send(message.encode())
 
                     #ip is offline
-                    except:
-                        print("%s:%d: Exception" % (address, tcp_port))
+                    except Exception as e:
+                        print("%s is no longer online" % address)
+                        print("%s:%d: Exception %s" % (address, tcp_port, e))
                     
                     finally:
                         tcp_sock.close()  
 
 
-        #view network IPs - NOT DONE
+        #view network IPs - DONE
         elif (option == 2):
 
-            udp_brodcast()
+            #broadcast to get active IPs
+            udp_broadcast()
 
+            #get ip list
             ip_list = check_iplist(q_tcp_listener)
 
+            #ip list empty
             if not ip_list:
                 ip_list = []
                 print("\nIP list is empty\n")
 
+            #print IP list
             else:
                 print("\nIP list: ")
 
@@ -219,8 +250,6 @@ if __name__ == '__main__':
                     print(ip)
 
                 print("")
-
-                #print("\n")
 
         #view contacts
         elif (option == 3):
@@ -297,10 +326,13 @@ if __name__ == '__main__':
         elif (option == 6):
 
             print("\nClosing processes")
+            
             p_udp.terminate()
-            p_tcp.terminate()
             p_udp.join()
+
+            p_tcp.terminate()
             p_tcp.join()
+            
             print("Exiting program")
             exit()
 
