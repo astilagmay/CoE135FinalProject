@@ -4,9 +4,15 @@ import os
 import sys
 import struct
 
+def send_message(message, socket):
+    msg_length = len(message)
+    socket.send(struct.pack('!I', msg_length))
+    socket.send(message.encode())
+    print("[MAIN] sent ", message)
+
+
 #gets local ip
 def get_localip():
-    #get local ip
     s = socket(AF_INET, SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     localip = s.getsockname()[0]
@@ -14,14 +20,29 @@ def get_localip():
 
     return localip
 
-def tcp_transfer(connection, client_address, proc_num):
+def tcp_transfer_s(socket, address, proc_num, filename):
+
+    print("KEK1")
+
+    message = "FILENAME: " + filename
+    send_message(message, socket)
+
+    message = "DONE"
+    send_message(message, socket)
+
+    print("KEK2")
+
+
+def tcp_transfer_r(connection, client_address, proc_num):
     while True:
+
+        #get bytes of message
         msg_length = connection.recv(4)
         msg_length, = struct.unpack('!I', msg_length)
-        print(msg_length)
+        #print(msg_length)
 
+        #get message
         message = b''
-
         while msg_length:
             data = connection.recv(msg_length)
             
@@ -30,35 +51,31 @@ def tcp_transfer(connection, client_address, proc_num):
 
             message += data
             msg_length -= len(data)
-
         message = message.decode()
-
-        if message = "DONE" 
+        
+        #end loop
+        if message == "DONE":
             break
 
+        #handle filename
+        elif "FILENAME" in message:
+            message = message.replace("FILENAME",'')
+            print(message)
+
+        #handle data
+        else:
+            pass
+
+
+    #transfer done
     print("[TCP TRANSFER %d] Transfer done." % proc_num)
-
-    # while count:
-    #     newbuf = sock.recv(count)
-    #     if not newbuf: return None
-    #     buf += newbuf
-    #     count -= len(newbuf)
-
-    #     print("[TCP TRANSFER %d] got message %s" % (proc_num,message))
-        
-    #     if message == "DONE":
-    #         print("[TCP TRANSFER %d] Transfer done." % proc_num)
-    #         break
-
-    #     elif "FILENAME" in message:
-    #         filename = message
-    #         print("[TCP TRANSFER %d]" % proc_num, filename)
-
     connection.close()
 
 
 #constant tcp listener
 def tcp_listener(tcp_queue):
+
+    #initialize variables
     tcp_port = 8080
     ip_list = []
     process_list = []
@@ -70,38 +87,42 @@ def tcp_listener(tcp_queue):
     #listen for incoming connections
     tcp_sock.listen(1)
 
+    #constant receive
     while True:
-        #print("\n[TCP LISTENER] Waiting for a connection")
         connection, client_address = tcp_sock.accept()
 
-
+        #check for handshakes
         try:
             print("\n[TCP LISTENER] Connection from ", end="")
             print(client_address)
-
-            # Receive the data in small chunks and retransmit it
-            data = connection.recv(1024).decode()
+            
+            #receive handshake
+            data = connection.recv(64).decode()
             print('[TCP LISTENER] Received ', data)
             
+            #UDP handshake
             if data == "HANDSHAKE FROM UDP":
                 ip_list.append(client_address[0])
 
+            #file transfer
             elif "FILE TRANSFER" in data:
                 #get number of files
                 num_files = int(''.join(i for i in data if i.isdigit()))
 
+                #make subprocesses
                 for i in range(num_files):
-                    p_transfer = Process(target = tcp_transfer, args = (connection,client_address,i))
+                    p_transfer = Process(target = tcp_transfer_r, args = (connection , client_address,i))
                     process_list.append(p_transfer)
                     p_transfer.start()
 
+                #terminate subprocesses
                 for proc in process_list:
                     proc.join()
 
                 # print("preparing for ", data)
 
+            #put ip list in main
             tcp_queue.put(ip_list)
-
 
         #close connection
         finally:
@@ -154,6 +175,7 @@ def udp_listener(udp_queue):
 
 #gets ip list from tcp listener subprocess
 def check_iplist(queue):
+    #get from queue
     try:
         ip_list = queue.get(block = True, timeout = 1)  
 
@@ -188,6 +210,8 @@ if __name__ == '__main__':
     p_udp = Process(target = udp_listener, args = (q_udp_listener,))
     p_tcp = Process(target = tcp_listener, args = (q_tcp_listener,))
     p_udp.daemon = True
+
+    process_list = []
 
     #start listeners
     p_udp.start() 
@@ -270,21 +294,17 @@ if __name__ == '__main__':
                     try:
                         tcp_sock.connect((address, tcp_port))
                         message = "FILE TRANSFER " + str(len(file_list))
-                        tcp_sock.send(message.encode())
+                        send_message(message, tcp_sock)
 
-                        for filename in file_list:
-                            message = "FILENAME: " + filename
-                            msg_length = len(message)
-                            tcp_sock.send(struct.pack('!I', msg_length))
-                            tcp_sock.send(message.encode())
-                            print("[MAIN] sent ", message)
+                        #make subprocesses
+                        for i in range(len(file_list)):
+                            p_transfer = Process(target = tcp_transfer_s, args = (tcp_sock, address, i, file_list[i]))
+                            process_list.append(p_transfer)
+                            p_transfer.start()
 
-
-                        message = "DONE"
-                        msg_length = len(message)
-                        tcp_sock.send(struct.pack('!I', msg_length))
-                        tcp_sock.send(message.encode())
-                        print("[MAIN] sent ", message)
+                        #terminate subprocesses
+                        for proc in process_list:
+                            proc.join()
 
                     #ip is offline
                     except Exception as e:
