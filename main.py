@@ -135,6 +135,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
         #handle filename
         elif "FILENAME" in message:
             message = message.replace("FILENAME: ",'')
+            filename = message
             print("[TCP TRANSFER RECEIVER %d]" % proc_num, message)
 
             #receive chunk size
@@ -168,9 +169,14 @@ def tcp_transfer_r(connection, client_address, proc_num):
                 except:
                     pass
 
-            print(len(chunk_list))
+            dummy = filename.split(".")
 
+            f = open("z" + dummy[0] + "." + dummy[1], "wb")
 
+            for i in range(len(chunk_list)):
+                f.write(chunk_list[i])
+
+            f.close()
 
     #transfer done
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
