@@ -161,7 +161,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
         print("CHUNK NUM: ", chunk_num)
 
         for i in range(chunk_num):
-            p = Process(target = tcp_receiver, args = (q, connection, i))
+            p = Process(target = tcp_receiver, args = (q, connection, i, lock))
             p.start()
             p_list.append(p)
 
