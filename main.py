@@ -35,7 +35,6 @@ def recv_message(socket):
 
     return message
 
-
 #gets local ip
 def get_localip():
     s = socket(AF_INET, SOCK_DGRAM)
@@ -45,16 +44,22 @@ def get_localip():
 
     return localip
 
+#sender subprocess
 def tcp_transfer_s(socket, address, proc_num, filename):
 
     #send filename
     message = "FILENAME: " + filename
     send_message(message, socket)
 
+    #split files
+
+    #send
+
     #send done
     message = "DONE"
     send_message(message, socket)
 
+#receiver subprocess
 def tcp_transfer_r(connection, client_address, proc_num):
     
     #constant receive
@@ -153,8 +158,8 @@ def udp_listener(udp_queue):
     #receive from broadcast
     while True:
 
-        #recieve broadcast packet
         try:
+            #recieve broadcast packet
             data, address = udp_sock.recvfrom(64)
 
             #ignore broadcast locally
@@ -219,9 +224,11 @@ if __name__ == '__main__':
 
     #initialize queue and process
     q_udp_listener = Queue()
-    q_tcp_listener = Queue()
     p_udp = Process(target = udp_listener, args = (q_udp_listener,))
+
+    q_tcp_listener = Queue()
     p_tcp = Process(target = tcp_listener, args = (q_tcp_listener,))
+
     p_udp.daemon = True
 
     process_list = []
