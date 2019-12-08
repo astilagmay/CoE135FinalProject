@@ -11,6 +11,28 @@ def send_message(message, socket):
     print("[MAIN] sent ", message)
 
 
+def recv_message(socket):
+    #get bytes of message
+    msg_length = socket.recv(4)
+    msg_length, = struct.unpack('!I', msg_length)
+    #print(msg_length)
+
+    #get message
+    message = b''
+    while msg_length:
+        data = socket.recv(msg_length)
+        
+        if not data:
+            break
+
+        message += data
+        msg_length -= len(data)
+
+    message = message.decode()
+
+    return message
+
+
 #gets local ip
 def get_localip():
     s = socket(AF_INET, SOCK_DGRAM)
@@ -36,22 +58,7 @@ def tcp_transfer_s(socket, address, proc_num, filename):
 def tcp_transfer_r(connection, client_address, proc_num):
     while True:
 
-        #get bytes of message
-        msg_length = connection.recv(4)
-        msg_length, = struct.unpack('!I', msg_length)
-        #print(msg_length)
-
-        #get message
-        message = b''
-        while msg_length:
-            data = connection.recv(msg_length)
-            
-            if not data:
-                break
-
-            message += data
-            msg_length -= len(data)
-        message = message.decode()
+        message = recv_message(connection)
         
         #end loop
         if message == "DONE":
@@ -97,7 +104,7 @@ def tcp_listener(tcp_queue):
             print(client_address)
             
             #receive handshake
-            data = connection.recv(64).decode()
+            data = recv_message(connection)
             print('[TCP LISTENER] Received ', data)
             
             #UDP handshake
