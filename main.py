@@ -361,7 +361,7 @@ if __name__ == '__main__':
             print("[FILE LIST]")
             os.chdir("..")
             files = [f for f in os.listdir('./Files')]
-             if ".DS_Store" in files:
+            if ".DS_Store" in files:
                 files.remove(".DS_Store")
 
             for f in files:
