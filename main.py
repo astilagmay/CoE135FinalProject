@@ -136,12 +136,26 @@ def tcp_transfer_r(connection, client_address, proc_num, lock):
 
     #get chunks
     while chunk_nums:
-        data = connection.recv(1024)
-        chunk_list.append(data)
+        #get bytes of message
+        msg_length = socket.recv(4)
+        msg_length, = struct.unpack('!I', msg_length)
+        #print(msg_length)
+
+        #get message
+        message = b''
+        while msg_length:
+            data = socket.recv(msg_length)
+            
+            if not data:
+                break
+
+            message += data
+            msg_length -= len(data)
+
+        chunk_list.append(message)
         chunk_nums = chunk_nums - 1
 
     #tell received
-
 
     #write to file
     f = open("z-" + filename, "wb")
