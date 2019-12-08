@@ -169,6 +169,8 @@ def tcp_transfer_r(connection, client_address, proc_num):
                 except:
                     pass
 
+            print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
+
             dummy = filename.split(".")
 
             f = open("z" + dummy[0] + "." + dummy[1], "wb")
