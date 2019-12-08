@@ -59,6 +59,7 @@ def get_localip():
 def tcp_sender(binary, socket):
     send_message(binary, socket)
 
+def tcp_receive(q, binary, socket)
 
 #sender subprocess
 def tcp_transfer_s(socket, address, proc_num, filename):
@@ -85,6 +86,11 @@ def tcp_transfer_s(socket, address, proc_num, filename):
 
     chunks = size // 1024 + (size % 1024 > 0)
 
+    #send chunk size
+    message = str(chunks)
+    send_message(message, socket)
+
+    #initialize chunks
     for i in range(chunks):
         data = f.read(1024)
         b_list.append(data)
@@ -123,9 +129,11 @@ def tcp_transfer_r(connection, client_address, proc_num):
             message = message.replace("FILENAME: ",'')
             print("[TCP TRANSFER RECEIVER %d]" % proc_num, message)
 
-        #handle data
-        else:
-            pass
+            #receive chunk size
+            message = recv_message(connection)
+            print(message)
+            
+
 
 
     #transfer done
