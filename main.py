@@ -13,17 +13,19 @@ def get_localip():
 
     return localip
 
-def tcp_transfer(connection, client_address):
+def tcp_transfer(connection, client_address, proc_num):
     while True:
         message = connection.recv(1024).decode()
+
+        print("[TCP TRANSFER %d] got message %s" % (proc_num,message))
         
         if message == "DONE":
-            print("[TCP TRANSFER] Transfer done.")
+            print("[TCP TRANSFER %d] Transfer done." % proc_num)
             break
 
         elif "FILENAME" in message:
             filename = message
-            print("[TCP TRANSFER]", filename)
+            print("[TCP TRANSFER %d]" % proc_num, filename)
 
     connection.close()
 
@@ -62,7 +64,7 @@ def tcp_listener(tcp_queue):
                 num_files = int(''.join(i for i in data if i.isdigit()))
 
                 for i in range(num_files):
-                    p_transfer = Process(target = tcp_transfer, args = (connection,client_address))
+                    p_transfer = Process(target = tcp_transfer, args = (connection,client_address,i))
                     process_list.append(p_transfer)
                     p_transfer.start()
 
@@ -246,9 +248,10 @@ if __name__ == '__main__':
                         for filename in file_list:
                             message = "FILENAME: " + filename
                             tcp_sock.send(message.encode())
+                            print("[MAIN] sent ", message)
 
                         tcp_sock.send("DONE".encode())
-                        
+                        print("[MAIN] sent ", message)
 
                     #ip is offline
                     except Exception as e:
