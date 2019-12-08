@@ -47,9 +47,11 @@ def get_localip():
 
 def tcp_transfer_s(socket, address, proc_num, filename):
 
+    #send filename
     message = "FILENAME: " + filename
     send_message(message, socket)
 
+    #send done
     message = "DONE"
     send_message(message, socket)
 
@@ -58,6 +60,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
     #constant receive
     while True:
 
+        #recieve message
         message = recv_message(connection)
         
         #end loop
@@ -66,8 +69,8 @@ def tcp_transfer_r(connection, client_address, proc_num):
 
         #handle filename
         elif "FILENAME" in message:
-            message = message.replace("FILENAME",'')
-            print("[TCP TRANSFER RECEIVER]", message)
+            message = message.replace("FILENAME: ",'')
+            print("[TCP TRANSFER RECEIVER %d]" % proc_num, message)
 
         #handle data
         else:
@@ -75,7 +78,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
 
 
     #transfer done
-    print("[TCP TRANSFER %d] Transfer done." % proc_num)
+    print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
     connection.close()
 
 
@@ -105,7 +108,7 @@ def tcp_listener(tcp_queue):
             
             #receive handshake
             data = recv_message(connection)
-            print('[TCP LISTENER] Received ', data)
+            print('[TCP LISTENER] Received', data)
             
             #UDP handshake
             if data == "HANDSHAKE FROM UDP":
