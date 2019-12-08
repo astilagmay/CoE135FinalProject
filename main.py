@@ -4,6 +4,15 @@ import os
 import sys
 import struct
 
+#gets local ip
+def get_localip():
+    s = socket(AF_INET, SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    localip = s.getsockname()[0]
+    s.close()
+
+    return localip
+
 #send message protocol
 def send_message(message, socket):
     msg_length = len(message)
@@ -35,14 +44,6 @@ def recv_message(socket):
     message = message.decode()
     return message
 
-#gets local ip
-def get_localip():
-    s = socket(AF_INET, SOCK_DGRAM)
-    s.connect(("8.8.8.8", 80))
-    localip = s.getsockname()[0]
-    s.close()
-
-    return localip
 
 #data sender
 def tcp_sender(binary, socket, i):
@@ -56,6 +57,8 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
     lock.acquire()
     print("[TCP TRANSFER SENDER %d] Start" % proc_num)
 
+    send_message(filename, socket)
+
     print("[TCP TRANSFER SENDER %d] All chunks sent" % proc_num)
     lock.release()
 
@@ -63,6 +66,9 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
 def tcp_transfer_r(connection, client_address, proc_num, lock):
     lock.acquire()
     print("[TCP TRANSFER RECEIVER %d] Start" % proc_num)
+
+    filename = recv_message(connection)
+    print("[TCP TRANSFER RECEIVER %d] filename: " % proc_num, filename)
 
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
     lock.release()
