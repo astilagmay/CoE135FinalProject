@@ -48,6 +48,11 @@ def recv_message(socket):
 #data sender
 def tcp_sender(binary, socket, i, lock):
     lock.acquire()
+
+    msg_length = len(binary)
+    socket.send(struct.pack('!I', msg_length))
+    socket.sendall(binary)
+
     print("[SENDER %d] DONE" % i, len(binary))
     socket.close()
     lock.release()
@@ -127,9 +132,10 @@ def tcp_transfer_r(connection, client_address, proc_num, lock):
     chunk_nums = recv_message(connection)
     print("[TCP TRANSFER RECEIVER %d] chunk_nums: " % proc_num, chunk_nums)
 
+    chunk_nums = int(chunk_nums)
 
     #get chunks
-    while int(chunk_nums):
+    while chunk_nums:
         data = connection.recv(1024)
         chunk_list.append(data)
         chunk_nums = chunk_nums - 1
