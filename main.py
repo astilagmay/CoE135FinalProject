@@ -103,8 +103,7 @@ def tcp_transfer_s(socket, address, proc_num, filename):
         p.join()
 
     #send done
-    message = "DONE"
-    send_message(message, socket)
+    print("[TCP TRANSFER SENDER %d] All chunks sent" % proc_num)
 
 def tcp_receiver(q, socket, i):
     data = socket.recv(1024)
@@ -122,64 +121,62 @@ def tcp_transfer_r(connection, client_address, proc_num):
     q = Queue()
 
     #constant receive
-    while True:
+    #while True:
 
-        #recieve message
+    #recieve message
+    message = recv_message(connection)
+    
+    # #end loop
+    # if message == "DONE":
+    #     break
+
+    #handle filename
+    if "FILENAME" in message:
+        message = message.replace("FILENAME: ",'')
+        filename = message
+        print("[TCP TRANSFER RECEIVER %d]" % proc_num, message)
+
+        #receive chunk size
         message = recv_message(connection)
+        print("[TCP TRANSFER RECEIVER %d]" % proc_num, "chunk size: " + message)
         
-        #end loop
-        if message == "DONE":
-            break
+        chunk_num = int(message)
 
-        #handle filename
-        elif "FILENAME" in message:
-            message = message.replace("FILENAME: ",'')
-            filename = message
-            print("[TCP TRANSFER RECEIVER %d]" % proc_num, message)
+        print(chunk_num)
 
-            #receive chunk size
-            message = recv_message(connection)
-            print("[TCP TRANSFER RECEIVER %d]" % proc_num, "chunk size: " + message)
-            
-            chunk_num = int(message)
+        for i in range(chunk_num):
+            p = Process(target = tcp_receiver, args = (q, connection, i))
+            p.start()
+            p_list.append(p)
 
-            print(chunk_num)
+        #join all process
+        for p in p_list:
+            p.join()
 
-            for i in range(chunk_num):
-                p = Process(target = tcp_receiver, args = (q, connection, i))
-                p.start()
-                p_list.append(p)
+        while True:
+            try:
+                data = q.get_nowait()
 
-            #join all process
-            for p in p_list:
-                p.join()
+                if data:
+                    chunk_list.append(data)
+                    chunk_count = chunk_count + 1
+                
+                if chunk_count == chunk_num:
+                    break
 
-            while True:
-                try:
-                    data = q.get_nowait()
+            except:
+                pass
 
-                    if data:
-                        chunk_list.append(data)
-                        chunk_count = chunk_count + 1
-                    
-                    print("CHUNK_COUNT: ", chunk_count)
+        print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
 
-                    if chunk_count == chunk_num:
-                        break
+        dummy = filename.split(".")
 
-                except:
-                    pass
+        f = open("z" + dummy[0] + "." + dummy[1], "wb")
 
-            print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
+        for i in range(len(chunk_list)):
+            f.write(chunk_list[i])
 
-            dummy = filename.split(".")
-
-            f = open("z" + dummy[0] + "." + dummy[1], "wb")
-
-            for i in range(len(chunk_list)):
-                f.write(chunk_list[i])
-
-            f.close()
+        f.close()
 
     #transfer done
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
