@@ -47,11 +47,24 @@ def get_localip():
 #sender subprocess
 def tcp_transfer_s(socket, address, proc_num, filename):
 
+    b_list = []
+
     #send filename
     message = "FILENAME: " + filename
     send_message(message, socket)
 
     #split files
+    f = open (filename, "rb")
+    size = os.stat("./" + filename).st_size 
+
+    chunks = size // 1024 + (size % 1024 > 0)
+
+    for i in range(chunks):
+        data = f.read(1024)
+        b_list.append(data)
+
+    print(chunks)
+    print(size)
 
     #send
 
