@@ -8,7 +8,14 @@ import struct
 def send_message(message, socket):
     msg_length = len(message)
     socket.send(struct.pack('!I', msg_length))
-    socket.send(message.encode())
+
+    try:
+        socket.send(message.encode())
+
+    except (UnicodeDecodeError, AttributeError):
+        socket.send(message)
+        pass
+
     #print("[MAIN] sent ", message)
 
 #recieve message protocol
@@ -31,9 +38,13 @@ def recv_message(socket):
         msg_length -= len(data)
 
     #decode
-    message = message.decode()
+    try:
+        message = message.decode()
+        return message
 
-    return message
+    except (UnicodeDecodeError, AttributeError):
+        return message
+
 
 #gets local ip
 def get_localip():
@@ -44,18 +55,33 @@ def get_localip():
 
     return localip
 
+#data sender
+def tcp_sender(binary, socket):
+    send_message(binary, socket)
+
+
 #sender subprocess
 def tcp_transfer_s(socket, address, proc_num, filename):
 
     b_list = []
+    p_list = []
 
     #send filename
     message = "FILENAME: " + filename
     send_message(message, socket)
 
     #split files
+    os.chdir("./Files")
+
+    #remove DS_Store
+    if ".DS_Store" in files:
+        files.remove(".DS_Store")
+
+    #get filesize
+    size = os.stat(filename).st_size 
+
+    #open files
     f = open (filename, "rb")
-    size = os.stat("./" + filename).st_size 
 
     chunks = size // 1024 + (size % 1024 > 0)
 
@@ -63,10 +89,17 @@ def tcp_transfer_s(socket, address, proc_num, filename):
         data = f.read(1024)
         b_list.append(data)
 
-    print(chunks)
-    print(size)
+    #print(len(b_list))
 
     #send
+    for b_data in b_list:
+        p = Process(target = tcp_sender, args = (b_data,socket))
+        p.start()
+        p_list.append(p)
+
+    #join all process
+    for p in p_list:
+        p.join()
 
     #send done
     message = "DONE"
