@@ -98,7 +98,7 @@ def tcp_transfer_s(socket, address, proc_num, filename):
     for p in p_list:
         p.join()
 
-    print(sys.getsizeof(b_list))
+    print(len(b_list))
 
     f.close()
 
@@ -106,7 +106,10 @@ def tcp_transfer_s(socket, address, proc_num, filename):
     print("[TCP TRANSFER SENDER %d] All chunks sent" % proc_num)
 
 def tcp_receiver(q, socket, i, lock):
- #get bytes of message
+
+    lock.acquire()
+
+    #get bytes of message
     msg_length = socket.recv(4)
     msg_length, = struct.unpack('!I', msg_length)
     #print(msg_length)
@@ -125,6 +128,10 @@ def tcp_receiver(q, socket, i, lock):
     q.put(message)
     print("[RECEIVER %d] DONE" % i, len(message))
 
+    socket.close()
+
+    lock.release()
+
 #receiver subprocess
 def tcp_transfer_r(connection, client_address, proc_num):
     
@@ -133,6 +140,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
     chunk_count = 0
 
     q = Queue()
+    lock = Lock()
 
     #recieve message
     message = recv_message(connection)
@@ -177,7 +185,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
 
         # print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
 
-        print(sys.getsizeof(chunk_list))
+        print(len(chunk_list))
 
         #convert to file
         dummy = filename.split(".")
