@@ -109,7 +109,7 @@ def tcp_transfer_s(socket, address, proc_num, filename):
 def tcp_receiver(q, socket, i):
     data = socket.recv(1024)
     # print("RECEIVER %d: " % i, sys.getsizeof(data))
-    #q.put(data)
+    q.put(data)
     print("[RECEIVER %d] DONE" % i)
 
 #receiver subprocess
@@ -162,7 +162,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
                         chunk_list.append(data)
                         chunk_count = chunk_count + 1
                     
-                    # print("CHUNK_COUNT: ", chunk_count)
+                    print("CHUNK_COUNT: ", chunk_count)
 
                     if chunk_count == chunk_num:
                         break
