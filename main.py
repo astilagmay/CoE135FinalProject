@@ -102,7 +102,7 @@ def tcp_transfer_s(socket, address, proc_num, filename):
     #print(len(b_list))
 
     #send
-    for b_data in b_list:
+    for i, b_data in enumerate(b_list):
         p = Process(target = tcp_sender, args = (b_data,socket, i))
         p.start()
         p_list.append(p)
@@ -145,7 +145,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
 
             q = Queue()
 
-            for i in message:
+            for i in chunk_num:
                 p = Process(target = tcp_receiver, args = (q, connection, i))
                 p.start()
                 p_list.append(p)
