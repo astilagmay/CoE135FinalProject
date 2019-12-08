@@ -53,7 +53,7 @@ def tcp_sender(binary, socket, i, lock):
     socket.send(struct.pack('!I', msg_length))
     socket.sendall(binary)
 
-    print("[SENDER %d] DONE" % i, len(binary))
+    #print("[SENDER %d] DONE" % i, len(binary))
     socket.close()
     lock.release()
 
@@ -80,7 +80,7 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
         chunk_list.append(data)
         data = f.read(1024)
 
-    print("[TCP TRANSFER SENDER %d] Chunk numbers:" % proc_num, len(chunk_list))
+    #print("[TCP TRANSFER SENDER %d] Chunk numbers:" % proc_num, len(chunk_list))
 
     #send chunk numbers
     send_message(str(len(chunk_list)), socket)
@@ -128,7 +128,7 @@ def tcp_receiver(q, socket, i, lock):
 
     q.put(message)
 
-    print("[RECEIVER %d] DONE" % i, len(message))
+    #print("[RECEIVER %d] DONE" % i, len(message))
     socket.close()
     lock.release()    
 
@@ -144,11 +144,11 @@ def tcp_transfer_r(connection, client_address, proc_num, lock):
 
     #get filename
     filename = recv_message(connection)
-    print("[TCP TRANSFER RECEIVER %d] filename: " % proc_num, filename)
+    #print("[TCP TRANSFER RECEIVER %d] filename: " % proc_num, filename)
 
     #get chunk numbers
     chunk_nums = recv_message(connection)
-    print("[TCP TRANSFER RECEIVER %d] chunk_nums: " % proc_num, chunk_nums)
+    #print("[TCP TRANSFER RECEIVER %d] chunk_nums: " % proc_num, chunk_nums)
 
     chunk_nums = int(chunk_nums)
 
