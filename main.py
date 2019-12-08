@@ -94,6 +94,10 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
     #check if received
 
 
+    #close file
+    f.close()
+
+
     #end subprocess
     print("[TCP TRANSFER SENDER %d] All chunks sent" % proc_num)
     lock.release()
@@ -124,14 +128,22 @@ def tcp_transfer_r(connection, client_address, proc_num, lock):
     print("[TCP TRANSFER RECEIVER %d] chunk_nums: " % proc_num, chunk_nums)
 
 
-    # #get chunks
-    # data = f.read(1024)
-    # while data:
-    #     chunk_list.append(data)
-    #     data = f.read(1024)
-
+    #get chunks
+    while int(chunk_nums):
+        data = connection.recv(1024)
+        chunk_list.append(data)
+        chunk_nums = chunk_nums - 1
 
     #tell received
+
+
+    #write to file
+    f = open("z-" + filename, "wb")
+    
+    for data in chunk_list:
+        f.write(data)
+    
+    f.close()
 
     #end subprocess
     print("[TCP TRANSFER RECEIVER %d] Transfer done" % proc_num)
