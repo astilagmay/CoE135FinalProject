@@ -154,32 +154,32 @@ def tcp_transfer_r(connection, client_address, proc_num):
             for p in p_list:
                 p.join()
 
-            # while True:
-            #     try:
-            #         data = q.get_nowait()
+            while True:
+                try:
+                    data = q.get_nowait()
 
-            #         if data:
-            #             chunk_list.append(data)
-            #             chunk_count = chunk_count + 1
+                    if data:
+                        chunk_list.append(data)
+                        chunk_count = chunk_count + 1
                     
-            #         # print("CHUNK_COUNT: ", chunk_count)
+                    # print("CHUNK_COUNT: ", chunk_count)
 
-            #         if chunk_count == chunk_num:
-            #             break
+                    if chunk_count == chunk_num:
+                        break
 
-            #     except:
-            #         pass
+                except:
+                    pass
 
-            # print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
+            print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
 
-            # dummy = filename.split(".")
+            dummy = filename.split(".")
 
-            # f = open("z" + dummy[0] + "." + dummy[1], "wb")
+            f = open("z" + dummy[0] + "." + dummy[1], "wb")
 
-            # for i in range(len(chunk_list)):
-            #     f.write(chunk_list[i])
+            for i in range(len(chunk_list)):
+                f.write(chunk_list[i])
 
-            # f.close()
+            f.close()
 
     #transfer done
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
