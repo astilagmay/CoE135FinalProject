@@ -1,5 +1,5 @@
 from socket import *
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Lock
 import os
 import sys
 import struct
@@ -57,7 +57,7 @@ def get_localip():
 
 #data sender
 def tcp_sender(binary, socket, i):
-    socket.send(binary)
+    send.socket(binary)
     print("[SENDER %d] DONE" % i)
 
 #sender subprocess
@@ -90,11 +90,9 @@ def tcp_transfer_s(socket, address, proc_num, filename):
         data = f.read(1024)
         b_list.append(data)
 
-    #print(len(b_list))
-
     #send
     for i, b_data in enumerate(b_list):
-        p = Process(target = tcp_sender, args = (b_data,socket, i))
+        p = Process(target = tcp_sender, args = (b_data, socket, i))
         p.start()
         p_list.append(p)
 
@@ -160,18 +158,19 @@ def tcp_transfer_r(connection, client_address, proc_num):
             except:
                 pass
 
-        print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
+        # print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
 
         # print(chunk_list)
 
-        dummy = filename.split(".")
+        #convert to file
+        # dummy = filename.split(".")
 
-        f = open("z" + dummy[0] + "." + dummy[1], "wb")
+        # f = open("z" + dummy[0] + "." + dummy[1], "wb")
 
-        for i in range(len(chunk_list)):
-            f.write(chunk_list[i])
+        # for i in range(len(chunk_list)):
+        #     f.write(chunk_list[i])
 
-        f.close()
+        # f.close()
 
     #transfer done
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
@@ -225,8 +224,6 @@ def tcp_listener(tcp_queue):
                 #terminate subprocesses
                 for proc in process_list:
                     proc.join()
-
-                # print("preparing for ", data)
 
             #put ip list in main
             tcp_queue.put(ip_list)
