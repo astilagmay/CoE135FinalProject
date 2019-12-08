@@ -46,31 +46,95 @@ def recv_message(socket):
 
 
 #data sender
-def tcp_sender(binary, socket, i):
-    msg = struct.pack('>I', len(binary)) + binary
-    socket.sendall(msg)
+def tcp_sender(binary, socket, i, lock):
+    lock.acquire()
     print("[SENDER %d] DONE" % i, len(binary))
     socket.close()
+    lock.release()
 
 #sender subprocess
 def tcp_transfer_s(socket, address, proc_num, filename, lock):
+
+    #initialize variables
+    chunk_list = []
+    process_list = []
+    
+    #start subprocess
     lock.acquire()
     print("[TCP TRANSFER SENDER %d] Start" % proc_num)
 
+    #send filename
+    os.chdir("./Files")
     send_message(filename, socket)
 
+    #process chunks
+    f = open(filename, "rb")
+
+    data = f.read(1024)
+    while data:
+        chunk_list.append(data)
+        data = f.read(1024)
+
+    print("[TCP TRANSFER SENDER %d] Chunk numbers:" % proc_num, len(chunk_list))
+
+    #send chunk numbers
+    send_message(str(len(chunk_list)), socket)
+
+    lock2 = Lock()
+
+    #send chunks
+    for i, binary in enumerate(chunk_list):
+        p_send = Process(target = tcp_sender, args = (binary, socket, i, lock2))
+        p_send.start()
+        process_list.append(p_send)
+
+    for p in process_list:
+        p.join()
+
+    #check if received
+
+
+    #end subprocess
     print("[TCP TRANSFER SENDER %d] All chunks sent" % proc_num)
     lock.release()
 
+#data receiver
+def tcp_receiver(binary, socket, i, lock):
+    lock.acquire()
+    print("[RECEIVER %d] DONE" % i, len(binary))
+    socket.close()
+    lock.release()    
+
 #receiver subprocess
 def tcp_transfer_r(connection, client_address, proc_num, lock):
+
+    process_list = []
+    chunk_list = []
+
+    #start subprocess
     lock.acquire()
     print("[TCP TRANSFER RECEIVER %d] Start" % proc_num)
 
+    #get filename
     filename = recv_message(connection)
     print("[TCP TRANSFER RECEIVER %d] filename: " % proc_num, filename)
 
-    print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
+    #get chunk numbers
+    chunk_nums = recv_message(connection)
+    print("[TCP TRANSFER RECEIVER %d] chunk_nums: " % proc_num, filename)
+
+
+    # #get chunks
+    # data = f.read(1024)
+    # while data:
+    #     chunk_list.append(data)
+    #     data = f.read(1024)
+
+
+    #tell received
+
+    #end subprocess
+    print("[TCP TRANSFER RECEIVER %d] Transfer done" % proc_num)
     lock.release()
 
 #constant tcp listener
