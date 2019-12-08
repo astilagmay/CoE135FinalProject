@@ -104,7 +104,7 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
 
 
     #end subprocess
-    print("[TCP TRANSFER SENDER %d] All chunks sent" % proc_num)
+    print("[TCP TRANSFER SENDER %d] All %s chunks sent" % proc_num, filename)
     lock.release()
 
 #data receiver
@@ -128,7 +128,7 @@ def tcp_receiver(q, socket, i, lock):
 
     q.put(message)
 
-    print("[RECEIVER %d] DONE" % i, len(binary))
+    print("[RECEIVER %d] DONE" % i, len(message))
     socket.close()
     lock.release()    
 
@@ -157,12 +157,18 @@ def tcp_transfer_r(connection, client_address, proc_num, lock):
 
     #get chunks
     for i in range(chunk_nums):
-        p_send = Process(target = tcp_sender, args = (q, socket, i, lock2))
+        p_send = Process(target = tcp_receiver, args = (q, connection, i, lock2))
         p_send.start()
         process_list.append(p_send)
 
+    chunk_count = 0
+
     while True:
+        if chunk_count == chunk_nums:
+            break
+
         chunk_list.append(q.get())
+        chunk_count = chunk_count + 1
 
     for p in process_list:
         p.join()
@@ -178,7 +184,8 @@ def tcp_transfer_r(connection, client_address, proc_num, lock):
     f.close()
 
     #end subprocess
-    print("[TCP TRANSFER RECEIVER %d] Transfer done" % proc_num)
+    print("[TCP TRANSFER RECEIVER %d] %s transfer done" % proc_num,  filename)
+    connection.close
     lock.release()
 
 #constant tcp listener
