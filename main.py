@@ -14,12 +14,13 @@ def get_localip():
     return localip
 
 def tcp_transfer():
-    pass
+    print("KEK")
 
 #constant tcp listener
 def tcp_listener(tcp_queue):
     tcp_port = 8080
     ip_list = []
+    process_list = []
 
     #bind to local address
     tcp_sock = socket(AF_INET, SOCK_STREAM)
@@ -32,19 +33,30 @@ def tcp_listener(tcp_queue):
         #print("\n[TCP LISTENER] Waiting for a connection")
         connection, client_address = tcp_sock.accept()
 
+
         try:
             print("\n[TCP LISTENER] Connection from ", end="")
             print(client_address)
 
             # Receive the data in small chunks and retransmit it
-            data = connection.recv(64).decode()
+            data = connection.recv(1024).decode()
             print('[TCP LISTENER] Received ', data)
             
             if data == "HANDSHAKE FROM UDP":
                 ip_list.append(client_address[0])
 
             elif "FILE TRANSFER" in data:
-                print("preparing for ", data)
+                num_files = ''.join(i for i in data if i.isdigit())
+
+                for i in range(num_files):
+                    p_transfer = Process(target = tcp_transfer, args = (connection,client_address))
+                    process_list.append(p_transfer)
+                    p_transfer.start()
+
+                for proc in process_list:
+                    proc.join()
+
+                # print("preparing for ", data)
 
             tcp_queue.put(ip_list)
 
