@@ -63,6 +63,7 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
     #initialize variables
     chunk_list = []
     process_list = []
+    read_size = 131072
     
     #start subprocess
     lock.acquire()
@@ -75,12 +76,14 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
     #process chunks
     f = open(filename, "rb")
 
-    data = f.read(1024)
+    data = f.read(read_size)
     while data:
         chunk_list.append(data)
-        data = f.read(1024)
+        data = f.read(read_size)
 
-    #print("[TCP TRANSFER SENDER %d] Chunk numbers:" % proc_num, len(chunk_list))
+
+
+    print("[TCP TRANSFER SENDER %d] Chunk numbers:" % proc_num, len(chunk_list))
 
     #send chunk numbers
     send_message(str(len(chunk_list)), socket)
