@@ -8,7 +8,6 @@ import struct
 def send_message(message, socket):
     msg_length = len(message)
     socket.send(struct.pack('!I', msg_length))
-
     socket.sendall(message.encode())
 
     #print("[MAIN] sent ", message)
@@ -47,160 +46,26 @@ def get_localip():
 
 #data sender
 def tcp_sender(binary, socket, i):
-    msg_length = len(binary)
-    socket.send(struct.pack('!I', msg_length))
-    socket.sendall(binary)
+    msg = struct.pack('>I', len(binary)) + binary
+    socket.sendall(msg)
     print("[SENDER %d] DONE" % i, len(binary))
-
     socket.close()
 
 #sender subprocess
-def tcp_transfer_s(socket, address, proc_num, filename):
-
-    b_list = []
-    p_list = []
-
-    #send filename
-    message = "FILENAME: " + filename
-    send_message(message, socket)
-
-    #split files
-    os.chdir("./Files")
-
-    #open files
-    f = open (filename, "rb")
-
-    #get filesize
-    file_size = os.stat(filename).st_size 
-
-    #get chunk numbers
-    chunk_num = file_size // 1024 + (file_size % 1024 > 0)
-
-    print("CHUNK NUM: ", chunk_num)
-
-    #send chunk size
-    message = str(chunk_num)
-    send_message(message, socket)
-
-    #initialize chunks
-    chunk = f.read(1024)
-    while chunk:
-        b_list.append(chunk)
-        chunk = f.read(1024)
-
-    #send
-    for i, b_data in enumerate(b_list):
-        p = Process(target = tcp_sender, args = (b_data, socket, i))
-        p.start()
-        p_list.append(p)
-
-    #join all process
-    for p in p_list:
-        p.join()
-
-    print(len(b_list))
-
-    f.close()
-
-    #send done
-    print("[TCP TRANSFER SENDER %d] All chunks sent" % proc_num)
-
-def tcp_receiver(q, socket, i, lock):
-
+def tcp_transfer_s(socket, address, proc_num, filename, lock):
     lock.acquire()
+    print("[TCP TRANSFER SENDER %d] Start" % proc_num)
 
-    #get bytes of message
-    msg_length = socket.recv(4)
-    msg_length, = struct.unpack('!I', msg_length)
-    #print(msg_length)
-
-    #get message
-    message = b''
-    while msg_length:
-        data = socket.recv(msg_length)
-        
-        if not data:
-            break
-
-        message += data
-        msg_length -= len(data)
-
-    q.put(message)
-    print("[RECEIVER %d] DONE" % i, len(message))
-
-    socket.close()
-
+    print("[TCP TRANSFER SENDER %d] All chunks sent" % proc_num)
     lock.release()
 
 #receiver subprocess
-def tcp_transfer_r(connection, client_address, proc_num):
-    
-    p_list = []
-    chunk_list = []
-    chunk_count = 0
+def tcp_transfer_r(connection, client_address, proc_num, lock):
+    lock.acquire()
+    print("[TCP TRANSFER RECEIVER %d] Start" % proc_num)
 
-    q = Queue()
-    lock = Lock()
-
-    #recieve message
-    message = recv_message(connection)
-
-    #handle filename
-
-    if "FILENAME" in message:
-        message = message.replace("FILENAME: ",'')
-        filename = message
-        print("[TCP TRANSFER RECEIVER %d]" % proc_num, message)
-
-        #receive chunk size
-        message = recv_message(connection)
-        print("[TCP TRANSFER RECEIVER %d]" % proc_num, "file size: " + message)
-        
-        chunk_num = int(message)
-
-        print("CHUNK NUM: ", chunk_num)
-
-        for i in range(chunk_num):
-            p = Process(target = tcp_receiver, args = (q, connection, i, lock))
-            p.start()
-            p_list.append(p)
-
-        #join all process
-        for p in p_list:
-            p.join()
-
-        while True:
-            try:
-                data = q.get()
-
-                if data:
-                    chunk_list.append(data)
-                    chunk_count = chunk_count + 1
-                
-                if chunk_count == chunk_num:
-                    break
-
-            except:
-                pass
-
-        # print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
-
-        print(len(chunk_list))
-
-        #convert to file
-        dummy = filename.split(".")
-
-        f = open("z" + dummy[0] + "." + dummy[1], "wb")
-
-        for i in range(len(chunk_list)):
-            f.write(chunk_list[i])
-
-        f.close()
-
-    #transfer done
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
-    connection.close()
-
+    lock.release()
 
 #constant tcp listener
 def tcp_listener(tcp_queue):
@@ -240,9 +105,11 @@ def tcp_listener(tcp_queue):
                 #get number of files
                 num_files = int(''.join(i for i in data if i.isdigit()))
 
+                lock = Lock()
+
                 #make subprocesses
                 for i in range(num_files):
-                    p_transfer = Process(target = tcp_transfer_r, args = (connection , client_address,i))
+                    p_transfer = Process(target = tcp_transfer_r, args = (connection , client_address, i, lock))
                     process_list.append(p_transfer)
                     p_transfer.start()
 
@@ -357,10 +224,7 @@ if __name__ == '__main__':
         print("Choose a command:")
         print("(1) Send file")
         print("(2) View network IPs")
-        print("(3) View contacts")
-        print("(4) Add contact")
-        print("(5) Change AirDrop settings")    #done
-        print("(6) Exit")   #done
+        print("(3) Exit")   #done
         option = int(input(": "))
 
         #send file - NOT DONE
@@ -434,9 +298,11 @@ if __name__ == '__main__':
                         message = "FILE TRANSFER " + str(len(file_list))
                         send_message(message, tcp_sock)
 
+                        lock = Lock()
+
                         #make subprocesses
                         for i in range(len(file_list)):
-                            p_transfer = Process(target = tcp_transfer_s, args = (tcp_sock, address, i, file_list[i]))
+                            p_transfer = Process(target = tcp_transfer_s, args = (tcp_sock, address, i, file_list[i], lock))
                             process_list.append(p_transfer)
                             p_transfer.start()
 
@@ -477,79 +343,8 @@ if __name__ == '__main__':
 
                 print("")
 
-        #view contacts
-        elif (option == 3):
-
-            #file exists
-            if os.path.exists("contacts.txt"):
-                f = open("contacts.txt", "r")
-            
-            #create file
-            else:
-                f = open("contacts.txt", "w")    
-
-            #add contact to array
-            contacts = f.read()
-
-            #empty
-            if len(contacts) == 0:
-                print("\nContacts list is empty\n")
-
-            #non-empty
-            else:
-                print("\nContacts list:")
-                
-                for i in contacts:
-                    print(i)
-
-                print("\n")
-
-            #close file
-            f.close()
-
-        #add contact - NOT DONE
-        elif (option == 4):
-            break
-
-        #change settings
-        elif (option == 5):
-
-            #show current settings
-            if (setting == 0):
-                print("\nReceiving is Off by default\n")
-
-            elif (setting == 1):
-                print("\nReceiving is Off\n")
-
-            elif (setting == 2):
-                print("\nReceiving from Contacts Only\n")
-
-            else:
-                print("\nReceiving from Everyone\n")
-
-            #ask for new settings
-            while(True):
-
-                setting = int(input("New setting: "))
-
-                if (setting == 1):
-                    print("\nReceiving is now Off\n")
-                    break
-
-                elif (setting == 2):
-                    print("\nNow receiving from Contacts Only\n")
-                    break
-
-                elif (setting == 3):
-                    print("\nNow receiving from Everyone\n")
-                    break
-
-                else:
-                    print("Invalid setting")
-                    continue
-
         #exit
-        elif (option == 6):
+        elif (option == 3):
 
             print("\nClosing processes")
             
