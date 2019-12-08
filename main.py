@@ -59,7 +59,9 @@ def get_localip():
 def tcp_sender(binary, socket):
     send_message(binary, socket)
 
-def tcp_receive(q, binary, socket)
+def tcp_receiver(q, socket):
+    data = recv_message(socket)
+    q.put(data)
 
 #sender subprocess
 def tcp_transfer_s(socket, address, proc_num, filename):
@@ -97,15 +99,15 @@ def tcp_transfer_s(socket, address, proc_num, filename):
 
     #print(len(b_list))
 
-    #send
-    for b_data in b_list:
-        p = Process(target = tcp_sender, args = (b_data,socket))
-        p.start()
-        p_list.append(p)
+    # #send
+    # for b_data in b_list:
+    #     p = Process(target = tcp_sender, args = (b_data,socket))
+    #     p.start()
+    #     p_list.append(p)
 
-    #join all process
-    for p in p_list:
-        p.join()
+    # #join all process
+    # for p in p_list:
+    #     p.join()
 
     #send done
     message = "DONE"
@@ -114,6 +116,10 @@ def tcp_transfer_s(socket, address, proc_num, filename):
 #receiver subprocess
 def tcp_transfer_r(connection, client_address, proc_num):
     
+    p_list = []
+    chunk_list = []
+    chunk_count = 0
+
     #constant receive
     while True:
 
@@ -131,8 +137,36 @@ def tcp_transfer_r(connection, client_address, proc_num):
 
             #receive chunk size
             message = recv_message(connection)
-            print(message)
+            print("[TCP TRANSFER RECEIVER %d]" % proc_num, "chunk size: " + message)
             
+            chunk_num = int(message)
+
+            q = Queue()
+
+            for i in message:
+                p = Process(target = tcp_receiver, args = (q, connection))
+                p.start()
+                p_list.append(p)
+
+            #join all process
+            for p in p_list:
+                p.join()
+
+            while True:
+                try:
+                    data = q.get_nowait()
+
+                    if data:
+                        chunk_list.append(data)
+                        chunk_count = chunk_count + 1
+                    
+                    if chunk_count == chunk_num:
+                        break
+
+                except:
+                    pass
+
+            print(len(chunk_list))
 
 
 
