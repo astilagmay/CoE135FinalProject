@@ -163,6 +163,8 @@ def tcp_transfer_r(connection, client_address, proc_num):
                         chunk_list.append(data)
                         chunk_count = chunk_count + 1
                     
+                    print("CHUNK_COUNT: ", chunk_count)
+
                     if chunk_count == chunk_num:
                         break
 
