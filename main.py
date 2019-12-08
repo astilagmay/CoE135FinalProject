@@ -14,7 +14,21 @@ def get_localip():
     return localip
 
 def tcp_transfer(connection, client_address):
-    print("KEK")
+    while True:
+        message = connect.recv(1024)
+        
+        if message == "DONE":
+            print("[TCP TRANSFER] Transfer done.")
+            break
+
+        elif "FILENAME" in message:
+            filename = message
+            print(filename)
+
+        else
+
+    clientsocket.close()
+
 
 #constant tcp listener
 def tcp_listener(tcp_queue):
@@ -147,7 +161,6 @@ if __name__ == '__main__':
     p_udp = Process(target = udp_listener, args = (q_udp_listener,))
     p_tcp = Process(target = tcp_listener, args = (q_tcp_listener,))
     p_udp.daemon = True
-    p_tcp.daemon = True
 
     #start listeners
     p_udp.start() 
@@ -232,6 +245,13 @@ if __name__ == '__main__':
                         message = "FILE TRANSFER " + str(len(file_list))
                         tcp_sock.send(message.encode())
 
+                        for filename in file_list:
+                            message = "FILENAME: " + filename
+                            tcp_sock.send(message.encode())
+
+                        tcp_sock.send("DONE".encode())
+                        
+
                     #ip is offline
                     except Exception as e:
                         print("%s is no longer online" % address)
@@ -240,6 +260,7 @@ if __name__ == '__main__':
                     finally:
                         tcp_sock.close()  
 
+            os.chdir("./coe135project")
 
         #view network IPs - DONE
         elif (option == 2):
