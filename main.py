@@ -15,10 +15,23 @@ def get_localip():
     return localip
 
 def tcp_transfer(connection, client_address, proc_num):
-    for i in range(1):
+    for i in range(2):
         msg_length = connection.recv(4)
         msg_length, = struct.unpack('!I', msg_length)
         print(msg_length)
+
+        message = b''
+
+        while msg_length:
+            data = connection.recv(msg_length)
+            
+            if not data:
+                break
+
+            message += data
+            msg_length -= len(data)
+
+        print(message.decode())
 
     # while count:
     #     newbuf = sock.recv(count)
