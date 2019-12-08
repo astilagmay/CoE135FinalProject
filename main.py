@@ -57,7 +57,7 @@ def get_localip():
 
 #data sender
 def tcp_sender(binary, socket, i):
-    send.socket(binary)
+    socket.send(binary)
     print("[SENDER %d] DONE" % i)
 
 #sender subprocess
