@@ -4,14 +4,16 @@ import os
 import sys
 import struct
 
+#send message protocol
 def send_message(message, socket):
     msg_length = len(message)
     socket.send(struct.pack('!I', msg_length))
     socket.send(message.encode())
-    print("[MAIN] sent ", message)
+    #print("[MAIN] sent ", message)
 
-
+#recieve message protocol
 def recv_message(socket):
+
     #get bytes of message
     msg_length = socket.recv(4)
     msg_length, = struct.unpack('!I', msg_length)
@@ -28,6 +30,7 @@ def recv_message(socket):
         message += data
         msg_length -= len(data)
 
+    #decode
     message = message.decode()
 
     return message
@@ -44,18 +47,15 @@ def get_localip():
 
 def tcp_transfer_s(socket, address, proc_num, filename):
 
-    print("KEK1")
-
     message = "FILENAME: " + filename
     send_message(message, socket)
 
     message = "DONE"
     send_message(message, socket)
 
-    print("KEK2")
-
-
 def tcp_transfer_r(connection, client_address, proc_num):
+    
+    #constant receive
     while True:
 
         message = recv_message(connection)
@@ -67,7 +67,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
         #handle filename
         elif "FILENAME" in message:
             message = message.replace("FILENAME",'')
-            print(message)
+            print("[TCP TRANSFER RECEIVER]", message)
 
         #handle data
         else:
