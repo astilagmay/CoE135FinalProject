@@ -57,13 +57,8 @@ def get_localip():
 
 #data sender
 def tcp_sender(binary, socket, i):
-    send_message(binary, socket)
+    socket.send(binary)
     print("[SENDER %d] DONE" % i)
-
-def tcp_receiver(q, socket, i):
-    data = recv_message(socket)
-    q.put(data)
-    print("[RECEIVER %d] DONE" % i)
 
 #sender subprocess
 def tcp_transfer_s(socket, address, proc_num, filename):
@@ -111,12 +106,20 @@ def tcp_transfer_s(socket, address, proc_num, filename):
     message = "DONE"
     send_message(message, socket)
 
+def tcp_receiver(q, socket, i):
+    data = socket.recv(1024)
+    # print("RECEIVER %d: " % i, sys.getsizeof(data))
+    #q.put(data)
+    print("[RECEIVER %d] DONE" % i)
+
 #receiver subprocess
 def tcp_transfer_r(connection, client_address, proc_num):
     
     p_list = []
     chunk_list = []
     chunk_count = 0
+
+    q = Queue()
 
     #constant receive
     while True:
@@ -140,7 +143,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
             
             chunk_num = int(message)
 
-            q = Queue()
+            print(chunk_num)
 
             for i in range(chunk_num):
                 p = Process(target = tcp_receiver, args = (q, connection, i))
@@ -151,32 +154,32 @@ def tcp_transfer_r(connection, client_address, proc_num):
             for p in p_list:
                 p.join()
 
-            while True:
-                try:
-                    data = q.get_nowait()
+            # while True:
+            #     try:
+            #         data = q.get_nowait()
 
-                    if data:
-                        chunk_list.append(data)
-                        chunk_count = chunk_count + 1
+            #         if data:
+            #             chunk_list.append(data)
+            #             chunk_count = chunk_count + 1
                     
-                    print("CHUNK_COUNT: ", chunk_count)
+            #         # print("CHUNK_COUNT: ", chunk_count)
 
-                    if chunk_count == chunk_num:
-                        break
+            #         if chunk_count == chunk_num:
+            #             break
 
-                except:
-                    pass
+            #     except:
+            #         pass
 
-            print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
+            # print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
 
-            dummy = filename.split(".")
+            # dummy = filename.split(".")
 
-            f = open("z" + dummy[0] + "." + dummy[1], "wb")
+            # f = open("z" + dummy[0] + "." + dummy[1], "wb")
 
-            for i in range(len(chunk_list)):
-                f.write(chunk_list[i])
+            # for i in range(len(chunk_list)):
+            #     f.write(chunk_list[i])
 
-            f.close()
+            # f.close()
 
     #transfer done
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
@@ -377,6 +380,10 @@ if __name__ == '__main__':
                     file_list.append(filename)
 
             #print(file_list)
+
+            if not file_list:
+                print("\nNo file selected.\n")
+                continue
 
             #broadcast to get active IPs
             udp_broadcast()
