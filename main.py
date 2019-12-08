@@ -2,6 +2,7 @@ from socket import *
 from multiprocessing import Process, Queue
 import os
 import sys
+import struct
 
 #gets local ip
 def get_localip():
@@ -14,18 +15,26 @@ def get_localip():
     return localip
 
 def tcp_transfer(connection, client_address, proc_num):
-    while True:
-        message = connection.recv(1024).decode()
+    for i in range(1):
+        msg_length = connection.recv(4)
+        msg_length, = struct.unpack('!I', msg_length)
+        print(msg_length)
 
-        print("[TCP TRANSFER %d] got message %s" % (proc_num,message))
+    # while count:
+    #     newbuf = sock.recv(count)
+    #     if not newbuf: return None
+    #     buf += newbuf
+    #     count -= len(newbuf)
+
+    #     print("[TCP TRANSFER %d] got message %s" % (proc_num,message))
         
-        if message == "DONE":
-            print("[TCP TRANSFER %d] Transfer done." % proc_num)
-            break
+    #     if message == "DONE":
+    #         print("[TCP TRANSFER %d] Transfer done." % proc_num)
+    #         break
 
-        elif "FILENAME" in message:
-            filename = message
-            print("[TCP TRANSFER %d]" % proc_num, filename)
+    #     elif "FILENAME" in message:
+    #         filename = message
+    #         print("[TCP TRANSFER %d]" % proc_num, filename)
 
     connection.close()
 
@@ -247,10 +256,14 @@ if __name__ == '__main__':
 
                         for filename in file_list:
                             message = "FILENAME: " + filename
+                            msg_length = len(message)
+                            tcp_sock.send(struct.pack('!I', msg_length))
                             tcp_sock.send(message.encode())
                             print("[MAIN] sent ", message)
 
-                        tcp_sock.send("DONE".encode())
+
+                        message = "DONE"
+                        tcp_sock.send(message.encode())
                         print("[MAIN] sent ", message)
 
                     #ip is offline
