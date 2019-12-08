@@ -104,7 +104,7 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
 
 
     #end subprocess
-    print("[TCP TRANSFER SENDER %d] All %s chunks sent" % proc_num, filename)
+    print("[TCP TRANSFER SENDER %d] All %s chunks sent" % (proc_num, filename))
     lock.release()
 
 #data receiver
@@ -184,7 +184,7 @@ def tcp_transfer_r(connection, client_address, proc_num, lock):
     f.close()
 
     #end subprocess
-    print("[TCP TRANSFER RECEIVER %d] %s transfer done" % proc_num,  filename)
+    print("[TCP TRANSFER RECEIVER %d] %s transfer done" % (proc_num,  filename))
     connection.close
     lock.release()
 
