@@ -121,7 +121,7 @@ def tcp_transfer_r(connection, client_address, proc_num, lock):
 
     #get chunk numbers
     chunk_nums = recv_message(connection)
-    print("[TCP TRANSFER RECEIVER %d] chunk_nums: " % proc_num, filename)
+    print("[TCP TRANSFER RECEIVER %d] chunk_nums: " % proc_num, chunk_nums)
 
 
     # #get chunks
