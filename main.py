@@ -108,8 +108,26 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
     lock.release()
 
 #data receiver
-def tcp_receiver(binary, socket, i, lock):
+def tcp_receiver(q, socket, i, lock):
     lock.acquire()
+    #get bytes of message
+    msg_length = socket.recv(4)
+    msg_length, = struct.unpack('!I', msg_length)
+    #print(msg_length)
+
+    #get message
+    message = b''
+    while msg_length:
+        data = socket.recv(msg_length)
+        
+        if not data:
+            break
+
+        message += data
+        msg_length -= len(data)
+
+    q.put(message)
+
     print("[RECEIVER %d] DONE" % i, len(binary))
     socket.close()
     lock.release()    
@@ -134,30 +152,24 @@ def tcp_transfer_r(connection, client_address, proc_num, lock):
 
     chunk_nums = int(chunk_nums)
 
+    q = Queue()
+    lock2 = Lock()
+
     #get chunks
-    while chunk_nums:
-        #get bytes of message
-        msg_length = socket.recv(4)
-        msg_length, = struct.unpack('!I', msg_length)
-        #print(msg_length)
+    for i in range(chunk_nums):
+        p_send = Process(target = tcp_sender, args = (q, socket, i, lock2))
+        p_send.start()
+        process_list.append(p_send)
 
-        #get message
-        message = b''
-        while msg_length:
-            data = socket.recv(msg_length)
-            
-            if not data:
-                break
+    while True:
+        chunk_list.append(q.get())
 
-            message += data
-            msg_length -= len(data)
-
-        chunk_list.append(message)
-        chunk_nums = chunk_nums - 1
-
+    for p in process_list:
+        p.join()
+       
     #tell received
 
-    #write to file
+    #write to file1
     f = open("z-" + filename, "wb")
     
     for data in chunk_list:
