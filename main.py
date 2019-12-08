@@ -9,12 +9,7 @@ def send_message(message, socket):
     msg_length = len(message)
     socket.send(struct.pack('!I', msg_length))
 
-    try:
-        socket.send(message.encode())
-
-    except (UnicodeDecodeError, AttributeError):
-        socket.send(message)
-        pass
+    socket.sendall(message.encode())
 
     #print("[MAIN] sent ", message)
 
@@ -38,13 +33,8 @@ def recv_message(socket):
         msg_length -= len(data)
 
     #decode
-    try:
-        message = message.decode()
-        return message
-
-    except (UnicodeDecodeError, AttributeError):
-        return message
-
+    message = message.decode()
+    return message
 
 #gets local ip
 def get_localip():
@@ -57,7 +47,9 @@ def get_localip():
 
 #data sender
 def tcp_sender(binary, socket, i):
-    socket.send(binary)
+    msg_length = len(binary)
+    socket.send(struct.pack('!I', msg_length))
+    socket.sendall(binary)
     print("[SENDER %d] DONE" % i)
 
 #sender subprocess
@@ -100,13 +92,29 @@ def tcp_transfer_s(socket, address, proc_num, filename):
     for p in p_list:
         p.join()
 
+    print(sys.getsizeof(b_list))
+
     #send done
     print("[TCP TRANSFER SENDER %d] All chunks sent" % proc_num)
 
 def tcp_receiver(q, socket, i):
-    data = socket.recv(1024)
-    # print("RECEIVER %d: " % i, sys.getsizeof(data))
-    q.put(data)
+ #get bytes of message
+    msg_length = socket.recv(4)
+    msg_length, = struct.unpack('!I', msg_length)
+    #print(msg_length)
+
+    #get message
+    message = b''
+    while msg_length:
+        data = socket.recv(msg_length)
+        
+        if not data:
+            break
+
+        message += data
+        msg_length -= len(data)
+
+    q.put(message)
     print("[RECEIVER %d] DONE" % i)
 
 #receiver subprocess
@@ -122,6 +130,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
     message = recv_message(connection)
 
     #handle filename
+
     if "FILENAME" in message:
         message = message.replace("FILENAME: ",'')
         filename = message
@@ -146,7 +155,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
 
         while True:
             try:
-                data = q.get_nowait()
+                data = q.get()
 
                 if data:
                     chunk_list.append(data)
@@ -163,14 +172,14 @@ def tcp_transfer_r(connection, client_address, proc_num):
         # print(chunk_list)
 
         #convert to file
-        # dummy = filename.split(".")
+        dummy = filename.split(".")
 
-        # f = open("z" + dummy[0] + "." + dummy[1], "wb")
+        f = open("z" + dummy[0] + "." + dummy[1], "wb")
 
-        # for i in range(len(chunk_list)):
-        #     f.write(chunk_list[i])
+        for i in range(len(chunk_list)):
+            f.write(chunk_list[i])
 
-        # f.close()
+        f.close()
 
     #transfer done
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
