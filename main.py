@@ -76,6 +76,8 @@ def tcp_transfer_s(socket, address, proc_num, filename):
     #get chunk numbers
     chunk_num = file_size // 1024 + (file_size % 1024 > 0)
 
+    print("CHUNK NUM: ", chunk_num)
+
     #send chunk size
     message = str(chunk_num)
     send_message(message, socket)
@@ -147,6 +149,8 @@ def tcp_transfer_r(connection, client_address, proc_num):
         print("[TCP TRANSFER RECEIVER %d]" % proc_num, "file size: " + message)
         
         chunk_num = int(message)
+
+        print("CHUNK NUM: ", chunk_num)
 
         for i in range(chunk_num):
             p = Process(target = tcp_receiver, args = (q, connection, i))
