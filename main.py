@@ -15,7 +15,7 @@ def get_localip():
 
 def tcp_transfer(connection, client_address):
     while True:
-        message = connect.recv(1024)
+        message = connection.recv(1024).decode()
         
         if message == "DONE":
             print("[TCP TRANSFER] Transfer done.")
@@ -23,11 +23,9 @@ def tcp_transfer(connection, client_address):
 
         elif "FILENAME" in message:
             filename = message
-            print(filename)
+            print("[TCP TRANSFER]", filename)
 
-        else
-
-    clientsocket.close()
+    connection.close()
 
 
 #constant tcp listener
