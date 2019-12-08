@@ -13,7 +13,7 @@ def get_localip():
 
     return localip
 
-def tcp_transfer():
+def tcp_transfer(connection, client_address):
     print("KEK")
 
 #constant tcp listener
@@ -46,7 +46,8 @@ def tcp_listener(tcp_queue):
                 ip_list.append(client_address[0])
 
             elif "FILE TRANSFER" in data:
-                num_files = ''.join(i for i in data if i.isdigit())
+                #get number of files
+                num_files = int(''.join(i for i in data if i.isdigit()))
 
                 for i in range(num_files):
                     p_transfer = Process(target = tcp_transfer, args = (connection,client_address))
