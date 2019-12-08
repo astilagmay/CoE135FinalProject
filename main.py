@@ -78,10 +78,6 @@ def tcp_transfer_s(socket, address, proc_num, filename):
     #split files
     os.chdir("./Files")
 
-    #remove DS_Store
-    if ".DS_Store" in files:
-        files.remove(".DS_Store")
-
     #get filesize
     size = os.stat(filename).st_size 
 
