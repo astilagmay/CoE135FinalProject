@@ -50,7 +50,7 @@ def tcp_sender(binary, socket, i):
     msg_length = len(binary)
     socket.send(struct.pack('!I', msg_length))
     socket.sendall(binary)
-    print("[SENDER %d] DONE" % i, sys.getsizeof(binary))
+    print("[SENDER %d] DONE" % i, len(binary))
 
     socket.close()
 
@@ -121,7 +121,7 @@ def tcp_receiver(q, socket, i, lock):
         msg_length -= len(data)
 
     q.put(message)
-    print("[RECEIVER %d] DONE" % i, sys.getsizeof(message))
+    print("[RECEIVER %d] DONE" % i, len(message))
 
 #receiver subprocess
 def tcp_transfer_r(connection, client_address, proc_num):
