@@ -56,12 +56,14 @@ def get_localip():
     return localip
 
 #data sender
-def tcp_sender(binary, socket):
+def tcp_sender(binary, socket, i):
     send_message(binary, socket)
+    print("[SENDER %d] DONE" % i)
 
-def tcp_receiver(q, socket):
+def tcp_receiver(q, socket, i):
     data = recv_message(socket)
     q.put(data)
+    print("[RECEIVER %d] DONE" % i)
 
 #sender subprocess
 def tcp_transfer_s(socket, address, proc_num, filename):
@@ -99,15 +101,15 @@ def tcp_transfer_s(socket, address, proc_num, filename):
 
     #print(len(b_list))
 
-    # #send
-    # for b_data in b_list:
-    #     p = Process(target = tcp_sender, args = (b_data,socket))
-    #     p.start()
-    #     p_list.append(p)
+    #send
+    for b_data in b_list:
+        p = Process(target = tcp_sender, args = (b_data,socket, i))
+        p.start()
+        p_list.append(p)
 
-    # #join all process
-    # for p in p_list:
-    #     p.join()
+    #join all process
+    for p in p_list:
+        p.join()
 
     #send done
     message = "DONE"
@@ -144,7 +146,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
             q = Queue()
 
             for i in message:
-                p = Process(target = tcp_receiver, args = (q, connection))
+                p = Process(target = tcp_receiver, args = (q, connection, i))
                 p.start()
                 p_list.append(p)
 
