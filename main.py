@@ -76,6 +76,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
         else:
             pass
 
+
     #transfer done
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
     connection.close()
@@ -102,13 +103,13 @@ def tcp_listener(tcp_queue):
 
         #check for handshakes
         try:
-            # #get data from other connection
+            # #get data of other connection
             # print("\n[TCP LISTENER] Connection from ", end="")
             # print(client_address)
             
             #receive handshake
             data = recv_message(connection)
-            #print('[TCP LISTENER] Received', data)
+            # print('[TCP LISTENER] Received', data)
             
             #UDP handshake
             if data == "HANDSHAKE FROM UDP":
@@ -160,7 +161,7 @@ def udp_listener(udp_queue):
             if address[0] == get_localip():
                 continue
 
-            # #print address of broadcaster
+            # #get data of broadcaster
             # print("[UDP LISTENER] ", end="")
             # print(data.decode(), address)
 
