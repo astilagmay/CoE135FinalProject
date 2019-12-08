@@ -167,7 +167,8 @@ def udp_listener(udp_queue):
 
                     try:
                         tcp_sock.connect((tcp_address, tcp_port)) 
-                        tcp_sock.send("HANDSHAKE FROM UDP".encode())
+                        message = "HANDSHAKE FROM UDP"
+                        send_message(message, tcp_sock)
 
                     #ip is offline
                     except Exception as e:
