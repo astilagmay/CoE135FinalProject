@@ -92,8 +92,6 @@ def tcp_transfer_s(socket, address, proc_num, filename):
 
     #print(len(b_list))
 
-    b_list = list(range(10))
-
     #send
     for i, b_data in enumerate(b_list):
         p = Process(target = tcp_sender, args = (b_data,socket, i))
@@ -122,15 +120,8 @@ def tcp_transfer_r(connection, client_address, proc_num):
 
     q = Queue()
 
-    #constant receive
-    #while True:
-
     #recieve message
     message = recv_message(connection)
-    
-    # #end loop
-    # if message == "DONE":
-    #     break
 
     #handle filename
     if "FILENAME" in message:
@@ -171,16 +162,16 @@ def tcp_transfer_r(connection, client_address, proc_num):
 
         print("[TCP TRANSFER RECEIVER %d] chunks received: %d" % (proc_num, len(chunk_list)))
 
-        print(chunk_list)
+        # print(chunk_list)
 
-        # dummy = filename.split(".")
+        dummy = filename.split(".")
 
-        # f = open("z" + dummy[0] + "." + dummy[1], "wb")
+        f = open("z" + dummy[0] + "." + dummy[1], "wb")
 
-        # for i in range(len(chunk_list)):
-        #     f.write(chunk_list[i])
+        for i in range(len(chunk_list)):
+            f.write(chunk_list[i])
 
-        # f.close()
+        f.close()
 
     #transfer done
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
