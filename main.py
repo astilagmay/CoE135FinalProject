@@ -102,12 +102,13 @@ def tcp_listener(tcp_queue):
 
         #check for handshakes
         try:
-            print("\n[TCP LISTENER] Connection from ", end="")
-            print(client_address)
+            # #get data from other connection
+            # print("\n[TCP LISTENER] Connection from ", end="")
+            # print(client_address)
             
             #receive handshake
             data = recv_message(connection)
-            print('[TCP LISTENER] Received', data)
+            #print('[TCP LISTENER] Received', data)
             
             #UDP handshake
             if data == "HANDSHAKE FROM UDP":
@@ -159,8 +160,9 @@ def udp_listener(udp_queue):
             if address[0] == get_localip():
                 continue
 
-            print("[UDP LISTENER] ", end="")
-            print(data.decode(), address)
+            # #print address of broadcaster
+            # print("[UDP LISTENER] ", end="")
+            # print(data.decode(), address)
 
             #send TCP handshake
             if (data.decode() != None):
