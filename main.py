@@ -76,7 +76,6 @@ def tcp_transfer_r(connection, client_address, proc_num):
         else:
             pass
 
-
     #transfer done
     print("[TCP TRANSFER RECEIVER %d] Transfer done." % proc_num)
     connection.close()
