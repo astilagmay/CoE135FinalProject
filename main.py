@@ -67,29 +67,24 @@ def tcp_transfer_s(socket, address, proc_num, filename):
     #split files
     os.chdir("./Files")
 
-    #get filesize
-    size = os.stat(filename).st_size 
-    size_left = size
-
-    print("Size: ", size)
-
     #open files
     f = open (filename, "rb")
 
+    #get filesize
+    file_size = os.stat(filename).st_size 
+
+    #get chunk numbers
+    chunk_num = file_size // 1024 + (file_size % 1024 > 0)
+
     #send chunk size
-    message = str(size)
+    message = str(chunk_num)
     send_message(message, socket)
 
     #initialize chunks
-    while True:
-        if size_left < 1024:
-            data = f.read(size_left)
-            b_list.append(data)
-            break
-
-        data = f.read(1024)
-        b_list.append(data)
-        size_left = size_left - 1024
+    chunk = f.read(1024)
+    while chunk:
+        b_list.append(chunk)
+        chunk = f.read(1024)
 
     #send
     for i, b_data in enumerate(b_list):
@@ -102,6 +97,8 @@ def tcp_transfer_s(socket, address, proc_num, filename):
         p.join()
 
     print(sys.getsizeof(b_list))
+
+    f.close()
 
     #send done
     print("[TCP TRANSFER SENDER %d] All chunks sent" % proc_num)
@@ -149,11 +146,7 @@ def tcp_transfer_r(connection, client_address, proc_num):
         message = recv_message(connection)
         print("[TCP TRANSFER RECEIVER %d]" % proc_num, "file size: " + message)
         
-        file_size = int(message)
-
-        print(file_size)
-
-        chunk_num = file_size // 1024 + (file_size % 1024 > 0)
+        chunk_num = int(message)
 
         for i in range(chunk_num):
             p = Process(target = tcp_receiver, args = (q, connection, i))
