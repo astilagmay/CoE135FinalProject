@@ -1,7 +1,5 @@
 import socket
-from threading import Thread, Lock
-from multiprocessing import Process, Lock, Queue
-import queue
+from multiprocessing import Process, Queue, Lock
 import os
 import sys
 import struct
@@ -72,8 +70,6 @@ def tcp_sender(binary, sock, i, lock):
 #sender subprocess
 def tcp_transfer_s(address, proc_num, filename, lock):
 
-    # lock.acquire()
-
     #start subprocess
     # print("[TCP TRANSFER SENDER %d] start" % proc_num)
 
@@ -95,9 +91,8 @@ def tcp_transfer_s(address, proc_num, filename, lock):
         process_list = []
         read_size = 2**24
 
-        # print(os.getcwd())
-
         #send filename
+        os.chdir("./multi30")
         send_message(filename, tcp_sock)
 
         f = open(filename, "rb")
@@ -116,7 +111,7 @@ def tcp_transfer_s(address, proc_num, filename, lock):
         lock2 = Lock()
 
         for i, binary in enumerate(chunk_list):
-            p_send = Thread(target = tcp_sender, args = (binary, tcp_sock, i, lock2))
+            p_send = Process(target = tcp_sender, args = (binary, tcp_sock, i, lock2))
             p_send.start()
             process_list.append(p_send)
 
@@ -134,7 +129,7 @@ def tcp_transfer_s(address, proc_num, filename, lock):
     except Exception as e:
         print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (proc_num, tcp_address, tcp_port, e))
         
-    # lock.release()
+    #lock.release()
 
 #data receiver
 def tcp_receiver(q, sock, i, lock):
@@ -206,12 +201,12 @@ def tcp_transfer_r(client_address, proc_num, lock):
         chunk_nums = recv_message(connection)
         chunk_nums = int(chunk_nums)
 
-        q = queue.Queue()
+        q = Queue()
         lock2 = Lock()
 
         #make processes
         for i in range(chunk_nums):
-            p_recv = Thread(target = tcp_receiver, args = (q, connection, i, lock2))
+            p_recv = Process(target = tcp_receiver, args = (q, connection, i, lock2))
             p_recv.start()
             process_list.append(p_recv)
 
@@ -289,7 +284,7 @@ def tcp_listener(tcp_queue):
 
                 #make subprocesses
                 for i in range(num_files):
-                    p_transfer = Thread(target = tcp_transfer_r, args = (client_address, i, lock))
+                    p_transfer = Process(target = tcp_transfer_r, args = (client_address, i, lock))
                     process_list.append(p_transfer)
                     p_transfer.start()
 
@@ -394,149 +389,86 @@ if __name__ == '__main__':
     p_udp.start() 
     p_tcp.start() 
 
-    #menu loop
-    while(True):
+    file_list = []
 
-        # print menu options
-        print("Choose a command:")
-        print("(1) Send file")
-        print("(2) View network IPs")
-        print("(3) Exit")   #done
-        option = int(input(": "))
+    #choose files in current directory    
+    print("[FILE LIST]")
+    os.chdir("..")
+    files = [f for f in os.listdir('./multi30')]
+    if ".DS_Store" in files:
+        files.remove(".DS_Store")
 
-        #send file - NOT DONE
-        if (option == 1):
+    for f in files:
+        print(f)
 
-            file_list = []
+    file_list = files
 
-            #choose files in current directory
-            print("\nChoose file/s to transfer, type \"All\" to transfer all files or \"Done\" when finished:")
-            
-            print("[FILE LIST]")
-            os.chdir("..")
-            files = [f for f in os.listdir('./Files')]
-            if ".DS_Store" in files:
-                files.remove(".DS_Store")
 
-            for f in files:
-                print(f)
 
-            while True:
-                filename = input(": ")
+    #broadcast to get active IPs
+    udp_broadcast()
 
-                if filename == "Done":
-                    break
+    #get ip list
+    ip_list = check_iplist(q_tcp_listener)
 
-                elif filename == "All":
-                    file_list = files.copy()
-                    break
+    #empty IP list
+    if not ip_list:
+        ip_list = []
+        print("\nIP list is empty\n")
 
-                else:
-                    file_list.append(filename)
+    #non empty IP list
+    else:
+        print("\nSelect IP:")
+        for i, ip in enumerate(ip_list):
+            print("(" + str(i) + ") " + ip)
 
-            #print(file_list)
+        print("")
+        ip_choice = int(input(": "))
 
-            if not file_list:
-                print("\nNo file selected.\n")
-                continue
+        print("SENDING 30 FILES")
+        start = timer()
 
-            #broadcast to get active IPs
-            udp_broadcast()
-
-            #get ip list
-            ip_list = check_iplist(q_tcp_listener)
-
-            #empty IP list
-            if not ip_list:
-                ip_list = []
-                print("\nIP list is empty\n")
-
-            #non empty IP list
-            else:
-                print("\nSelect IP:")
-                for i, ip in enumerate(ip_list):
-                    print("(" + str(i) + ") " + ip)
-
-                print("")
-                ip_choice = int(input(": "))
-
-                #invalid IP
-                if ip_choice > (len(ip_list) - 1):
-                    print("\nInvalid IP\n")
-                    continue
-
-                #file transfer start
-                else:
-                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    address = ip_list[ip_choice]
-
-                    try:
-                        tcp_sock.connect((address, tcp_port))
-                        message = "FILE TRANSFER " + str(len(file_list))
-                        send_message(message, tcp_sock)
-
-                        lock = Lock()
-                        os.chdir("./Files")
-
-                        #make subprocesses
-                        for i in range(len(file_list)):
-                            p_transfer = Thread(target = tcp_transfer_s, args = (address, i, file_list[i], lock))
-                            process_list.append(p_transfer)
-                            p_transfer.start()
-
-                        #terminate subprocesses
-                        for proc in process_list:
-                            proc.join()
-
-                    #ip is offline
-                    except Exception as e:
-                        print("%s is no longer online" % address)
-                        #print("%s:%d: Exception %s" % (address, tcp_port, e))
-                    
-                    finally:
-                        tcp_sock.close()  
-
-        #view network IPs - DONE
-        elif (option == 2):
-
-            #broadcast to get active IPs
-            udp_broadcast()
-
-            #get ip list
-            ip_list = check_iplist(q_tcp_listener)
-
-            #ip list empty
-            if not ip_list:
-                ip_list = []
-                print("\nIP list is empty\n")
-
-            #print IP list
-            else:
-                print("\nIP list: ")
-
-                for ip in ip_list:
-                    print(ip)
-
-                print("")
-
-        #exit
-        elif (option == 3):
-
-            print("\nClosing processes")
-            p_udp.join()
-            p_tcp.join()
+        #invalid IP
+        if ip_choice > (len(ip_list) - 1):
+            print("\nInvalid IP\n")
             p_udp.terminate()
-            p_tcp.terminate
-            print("Exiting program")
+            p_tcp.terminate()
             exit()
 
-        #default
+        #file transfer start
         else:
-            print("Invalid command")
+            tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            address = ip_list[ip_choice]
 
+            try:
+                tcp_sock.connect((address, tcp_port))
+                message = "FILE TRANSFER " + str(len(file_list))
+                send_message(message, tcp_sock)
 
-                
+                lock = Lock()
 
+                #make subprocesses
+                for i in range(len(file_list)):
+                    p_transfer = Process(target = tcp_transfer_s, args = (address, i, file_list[i], lock))
+                    process_list.append(p_transfer)
+                    p_transfer.start()
 
-    
+                #terminate subprocesses
+                for proc in process_list:
+                    proc.join()
+                    
 
+            #ip is offline
+            except Exception as e:
+                print("%s is no longer online" % address)
+                #print("%s:%d: Exception %s" % (address, tcp_port, e))
+            
+            finally:
+                tcp_sock.close()  
+
+        print("Total elapsed time: ", timer() - start)
+
+    os.chdir("./coe135project")
+    p_udp.terminate()
+    p_tcp.terminate()
+    exit()

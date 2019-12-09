@@ -84,12 +84,12 @@ def tcp_transfer_s(address, proc_num, filename, lock):
         tcp_sock.connect((tcp_address, tcp_port)) 
         send_message("READY", tcp_sock)
         print("[TCP TRANSFER SENDER %d] connected" % proc_num)
-        start_time = timer(number = 1000)
+        start_time = timer()
 
         #send file
         chunk_list = []
         process_list = []
-        read_size = 1048576
+        read_size = 2**24
 
         #send filename
         os.chdir("./Files")
@@ -129,9 +129,6 @@ def tcp_transfer_s(address, proc_num, filename, lock):
     except Exception as e:
         print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (proc_num, tcp_address, tcp_port, e))
         
-
-
-
     #lock.release()
 
 #data receiver
@@ -235,8 +232,9 @@ def tcp_transfer_r(client_address, proc_num, lock):
         f.close()
 
         #end subprocess
-        elapsed_time = timer() - start_time
-        print("[TCP TRANSFER RECEIVER %d]TRANSFER COMPLETE: %s  | Elapsed time: %.2fs" % (proc_num, filename, elapsed_time))
+        end_time = timer()
+        elapsed_time = end_time - start_time
+        print("[TCP TRANSFER RECEIVER %d] TRANSFER COMPLETE: %s  | Elapsed time: " % (proc_num, filename), elapsed_time)
         connection.close()
 
     except Exception as e:
