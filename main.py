@@ -68,7 +68,7 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
     #ip is offline
     except Exception as e:
-        print("[TCP TRANSFER SENDER] %s:%d: Exception %s" % (tcp_address, tcp_port, e))
+        print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (i, tcp_address, tcp_port, e))
     
     finally:
         tcp_sock.close()  
@@ -95,7 +95,7 @@ def tcp_transfer_r(client_address, proc_num, lock):
     connection, client_address = tcp_sock.accept()
 
     #get data of other connection
-    print("\n[TCP TRANSFER RECEIVER %d] Connection from ", end="")
+    print("\n[TCP TRANSFER RECEIVER %d] Connection from " %proc_num, end="")
     print(client_address)
 
     connection.close()
