@@ -14,25 +14,25 @@ def get_localip():
     return localip
 
 #send message protocol
-def send_message(message, socket):
+def send_message(message, sock):
     msg_length = len(message)
-    socket.send(struct.pack('!I', msg_length))
-    socket.sendall(message.encode())
+    sock.socket.send(struct.pack('!I', msg_length))
+    sock.sendall(message.encode())
 
     #print("[MAIN] sent ", message)
 
 #recieve message protocol
-def recv_message(socket):
+def recv_message(sock):
 
     #get bytes of message
-    msg_length = socket.recv(4)
+    msg_length = sock.recv(4)
     msg_length, = struct.unpack('!I', msg_length)
     #print(msg_length)
 
     #get message
     message = b''
     while msg_length:
-        data = socket.recv(msg_length)
+        data = sock.recv(msg_length)
         
         if not data:
             break
@@ -46,30 +46,36 @@ def recv_message(socket):
 
 
 #data sender
-def tcp_sender(binary, address, socket, i, lock):
-    lock.acquire()
+def tcp_sender(binary, address, sock, i, lock):
+    pass
+    # lock.acquire()
 
-    tcp_port = 10000 + i
+    # tcp_port = 10000 + i
+    # print(tcp_port)
 
-    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_address = address
+    # print("[TCP TRANSFER SENDER %d PORT %d] starting" % (i, tcp_port))
 
-    try:
-        tcp_sock.connect((tcp_address, tcp_port)) 
-        message = "HANDSHAKE FROM UDP"
-        send_message(message, tcp_sock)
+    # tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # tcp_address = address
 
-    #ip is offline
-    except Exception as e:
-        print("[UDP LISTENER] %s:%d: Exception %s" % (tcp_address, tcp_port, e))
+    # try:
+    #     tcp_sock.connect((tcp_address, tcp_port)) 
+    #     # message = "HANDSHAKE FROM UDP"
+    #     # send_message(message, tcp_sock)
+
+    # #ip is offline
+    # except Exception as e:
+    #     print("[UDP LISTENER] %s:%d: Exception %s" % (tcp_address, tcp_port, e))
     
-    finally:
-        tcp_sock.close()  
+    # finally:
+    #     tcp_sock.close()  
 
-    lock.release()
+    # print("[TCP TRANSFER SENDER %d PORT %d] ending" % (i, tcp_port))
+
+    # lock.release()
 
 #sender subprocess
-def tcp_transfer_s(socket, address, proc_num, filename, lock):
+def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
     #initialize variables
     chunk_list = []
@@ -92,30 +98,51 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
         chunk_list.append(data)
         data = f.read(read_size)
 
-
-
     print("[TCP TRANSFER SENDER %d] Chunk numbers:" % proc_num, len(chunk_list))
 
     #send chunk numbers
     send_message(str(len(chunk_list)), socket)
 
-    lock2 = Lock()
+    tcp_port = 10000 + i
+    print(tcp_port)
 
-    #send chunks
-    for i, binary in enumerate(chunk_list):
-        p_send = Process(target = tcp_sender, args = (binary, address, socket, i, lock2))
-        p_send.start()
-        process_list.append(p_send)
+    # print("[TCP TRANSFER SENDER %d PORT %d] starting" % (i, tcp_port))
 
-    for p in process_list:
-        p.join()
+    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp_address = address
 
-    #check if received
+    try:
+        tcp_sock.connect((tcp_address, tcp_port)) 
+        # message = "HANDSHAKE FROM UDP"
+        # send_message(message, tcp_sock)
+
+    #ip is offline
+    except Exception as e:
+        print("[UDP LISTENER] %s:%d: Exception %s" % (tcp_address, tcp_port, e))
+    
+    finally:
+        tcp_sock.close()  
+
+    print("[TCP TRANSFER SENDER %d] connected to port %d" % (i, tcp_port))
+
+
+
+    # lock2 = Lock()
+
+    # #send chunks
+    # for i, binary in enumerate(chunk_list):
+    #     p_send = Process(target = tcp_sender, args = (binary, address, socket, i, lock2))
+    #     p_send.start()
+    #     process_list.append(p_send)
+
+    # for p in process_list:
+    #     p.join()
+
+    # #check if received
 
 
     #close file
     f.close()
-
 
     #end subprocess
     print("[TCP TRANSFER SENDER %d] All %s chunks sent" % (proc_num, filename))
@@ -124,9 +151,7 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
 #data receiver
 def tcp_receiver(q, address, i, lock):
     lock.acquire()
-    # #get bytes of message
-    # msg_length = socket.recv(4)
-    # msg_length, = struct.unpack('!I', msg_length)
+
 
     tcp_port = 10000 + i
 
