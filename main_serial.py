@@ -64,11 +64,11 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
     #initialize variables
     chunk_list = []
     process_list = []
-    read_size = 131072
+    read_size = 2**24
     
     #start subprocess
     lock.acquire()
-    print("[TCP TRANSFER SENDER %d] Start" % proc_num)
+    # print("[TCP TRANSFER SENDER %d] Start" % proc_num)
     start_time = timer()
 
     #send filename
