@@ -53,10 +53,9 @@ def tcp_sender(binary, address, sock, i, lock):
 def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
     #start subprocess
-    # lock.acquire()
     print("[TCP TRANSFER SENDER %d] start" % proc_num)
 
-    #make socket
+    #make socket and connect
     tcp_port = 10000 + i
 
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -71,9 +70,9 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
         
         #finally:
 
+    #end subprocess
     print("[TCP TRANSFER SENDER %d] closing" % proc_num)
     tcp_sock.close()  
-    # lock.release()
 
 #data receiver
 def tcp_receiver(q, address, i, lock):
@@ -82,8 +81,10 @@ def tcp_receiver(q, address, i, lock):
 #receiver subprocess
 def tcp_transfer_r(client_address, proc_num, lock):
 
+    #start subprocess
     print("[TCP TRANSFER RECEIVER %d] start" % proc_num)
 
+    #create socket and connect
     tcp_port = 10000 + proc_num
 
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -96,6 +97,9 @@ def tcp_transfer_r(client_address, proc_num, lock):
     #get data of other connection
     print("\n[TCP TRANSFER RECEIVER %d] connected" %proc_num)
 
+    #DATA TRANSFER
+
+    #end subprocess
     print("[TCP TRANSFER RECEIVER %d] closing" % proc_num)
     connection.close()
 
