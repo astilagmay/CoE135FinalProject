@@ -88,7 +88,7 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
     #send filename
     os.chdir("./Files")
-    send_message(filename, socket)
+    send_message(filename, sock)
 
     #process chunks
     f = open(filename, "rb")
@@ -101,7 +101,7 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
     print("[TCP TRANSFER SENDER %d] Chunk numbers:" % proc_num, len(chunk_list))
 
     #send chunk numbers
-    send_message(str(len(chunk_list)), socket)
+    send_message(str(len(chunk_list)), sock)
 
     tcp_port = 10000 + i
     print(tcp_port)
@@ -331,7 +331,7 @@ def udp_listener(udp_queue):
 
             #send TCP handshake
             if (data.decode() != None):
-                    tcp_sock = socket.socket()
+                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     tcp_address = address[0]
 
                     try:
@@ -469,7 +469,7 @@ if __name__ == '__main__':
 
                 #file transfer start
                 else:
-                    tcp_sock = socket.socket()
+                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     address = ip_list[ip_choice]
 
                     try:
