@@ -54,7 +54,7 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
     #start subprocess
     # lock.acquire()
-    print("[TCP TRANSFER SENDER %d] Start" % proc_num)
+    print("[TCP TRANSFER SENDER %d] start" % proc_num)
 
     #make socket
     tcp_port = 10000 + i
@@ -64,7 +64,6 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
     try:
         tcp_sock.connect((tcp_address, tcp_port)) 
-        send_message("Hi", tcp_sock)
 
     #ip is offline
     except Exception as e:
@@ -72,6 +71,7 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
         
         #finally:
 
+    print("[TCP TRANSFER SENDER %d] closing" % proc_num)
     tcp_sock.close()  
     # lock.release()
 
@@ -82,7 +82,7 @@ def tcp_receiver(q, address, i, lock):
 #receiver subprocess
 def tcp_transfer_r(client_address, proc_num, lock):
 
-    print("[TCP TRANSFER RECEIVER %d] Start" % proc_num)
+    print("[TCP TRANSFER RECEIVER %d] start" % proc_num)
 
     tcp_port = 10000 + proc_num
 
@@ -94,9 +94,9 @@ def tcp_transfer_r(client_address, proc_num, lock):
     connection, client_address = tcp_sock.accept()
 
     #get data of other connection
-    print("\n[TCP TRANSFER RECEIVER %d] Connection from " %proc_num, end="")
-    print(client_address)
+    print("\n[TCP TRANSFER RECEIVER %d] connected" %proc_num)
 
+    print("[TCP TRANSFER RECEIVER %d] closing" % proc_num)
     connection.close()
 
 #constant tcp listener
