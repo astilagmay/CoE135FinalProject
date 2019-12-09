@@ -55,7 +55,7 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
     #lock.acquire()
 
     #start subprocess
-    print("[TCP TRANSFER SENDER %d] start" % proc_num)
+    # print("[TCP TRANSFER SENDER %d] start" % proc_num)
 
     #make socket and connect
     tcp_port = 10000 + proc_num
@@ -73,10 +73,11 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
     except Exception as e:
         print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (proc_num, tcp_address, tcp_port, e))
         
-        #finally:
+
+    #send file
 
     #end subprocess
-    print("[TCP TRANSFER SENDER %d] closing" % proc_num)
+    # print("[TCP TRANSFER SENDER %d] closing" % proc_num)
     tcp_sock.close()  
 
     #lock.release()
@@ -89,7 +90,7 @@ def tcp_receiver(q, address, i, lock):
 def tcp_transfer_r(client_address, proc_num, lock):
 
     #start subprocess
-    print("[TCP TRANSFER RECEIVER %d] start" % proc_num)
+    # print("[TCP TRANSFER RECEIVER %d] start" % proc_num)
 
     #create socket and connect
     tcp_port = 10000 + proc_num
@@ -109,10 +110,10 @@ def tcp_transfer_r(client_address, proc_num, lock):
             print("[TCP TRANSFER RECEIVER %d] connected" %proc_num)
             break
 
-    #data transfer
+    #receive file
 
     #end subprocess
-    print("[TCP TRANSFER RECEIVER %d] closing" % proc_num)
+    # print("[TCP TRANSFER RECEIVER %d] closing" % proc_num)
     connection.close()
 
 #constant tcp listener
