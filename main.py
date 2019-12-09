@@ -63,7 +63,7 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_address = address
 
-    # while True:
+    #send handshake
     try:
         tcp_sock.connect((tcp_address, tcp_port)) 
         send_message("READY", tcp_sock)
@@ -100,13 +100,14 @@ def tcp_transfer_r(client_address, proc_num, lock):
 
     tcp_sock.listen(1)
 
+    #receive handshake
     while True:
         connection, client_address = tcp_sock.accept()
         
         data = recv_message(connection)
 
         if data == "READY":
-            #get data of other connection
+            #get data of other connection1
             print("[TCP TRANSFER RECEIVER %d] connected" %proc_num)
             break
 
