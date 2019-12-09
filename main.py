@@ -46,15 +46,26 @@ def recv_message(socket):
 
 
 #data sender
-def tcp_sender(binary, socket, i, lock):
+def tcp_sender(binary, address, socket, i, lock):
     lock.acquire()
 
-    msg_length = len(binary)
-    socket.send(struct.pack('!I', msg_length))
-    socket.sendall(binary)
+    tcp_port = 10000 + i
 
-    #print("[SENDER %d] DONE" % i, len(binary))
-    socket.close()
+    tcp_sock = socket()
+    tcp_address = address
+
+    try:
+        tcp_sock.connect((tcp_address, tcp_port)) 
+        message = "HANDSHAKE FROM UDP"
+        send_message(message, tcp_sock)
+
+    #ip is offline
+    except Exception as e:
+        print("[UDP LISTENER] %s:%d: Exception %s" % (tcp_address, tcp_port, e))
+    
+    finally:
+        tcp_sock.close()  
+
     lock.release()
 
 #sender subprocess
@@ -63,7 +74,7 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
     #initialize variables
     chunk_list = []
     process_list = []
-    read_size = 131072
+    read_size = 16777216
     
     #start subprocess
     lock.acquire()
@@ -92,7 +103,7 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
 
     #send chunks
     for i, binary in enumerate(chunk_list):
-        p_send = Process(target = tcp_sender, args = (binary, socket, i, lock2))
+        p_send = Process(target = tcp_sender, args = (binary, address, socket, i, lock2))
         p_send.start()
         process_list.append(p_send)
 
@@ -111,28 +122,47 @@ def tcp_transfer_s(socket, address, proc_num, filename, lock):
     lock.release()
 
 #data receiver
-def tcp_receiver(q, socket, i, lock):
+def tcp_receiver(q, address, i, lock):
     lock.acquire()
-    #get bytes of message
-    msg_length = socket.recv(4)
-    msg_length, = struct.unpack('!I', msg_length)
+    # #get bytes of message
+    # msg_length = socket.recv(4)
+    # msg_length, = struct.unpack('!I', msg_length)
+
+    tcp_port = 10000 + i
+
+    #bind to local address
+    tcp_sock = socket(AF_INET, SOCK_STREAM)
+    tcp_sock.bind((get_localip(), tcp_port))
+
+    #listen for incoming connections
+    tcp_sock.listen(1)
+
+    #constant receive
+    while True:
+        connection, client_address = tcp_sock.accept()
+
+        # #check for handshakes
+        # try:
+        #get data of other connection
+        print("\n[TCP LISTENER] Connection from ", end="")
+        print(client_address)
     #print(msg_length)
 
-    #get message
-    message = b''
-    while msg_length:
-        data = socket.recv(msg_length)
+    # #get message
+    # message = b''
+    # while msg_length:
+    #     data = socket.recv(msg_length)
         
-        if not data:
-            break
+    #     if not data:
+    #         break
 
-        message += data
-        msg_length -= len(data)
+    #     message += data
+    #     msg_length -= len(data)
 
-    q.put(message)
+    # q.put(message)
 
     #print("[RECEIVER %d] DONE" % i, len(message))
-    socket.close()
+    tcp_sock.close()
     lock.release()    
 
 #receiver subprocess
@@ -160,7 +190,7 @@ def tcp_transfer_r(connection, client_address, proc_num, lock):
 
     #get chunks
     for i in range(chunk_nums):
-        p_send = Process(target = tcp_receiver, args = (q, connection, i, lock2))
+        p_send = Process(target = tcp_receiver, args = (q, client_address, i, lock2))
         p_send.start()
         process_list.append(p_send)
 
