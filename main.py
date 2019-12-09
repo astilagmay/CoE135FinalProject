@@ -102,7 +102,7 @@ def tcp_transfer_r(client_address, proc_num, lock):
     while True:
         connection, client_address = tcp_sock.accept()
         
-        data = recv_message(tcp_sock)
+        data = recv_message(connection)
 
         if data == "READY":
             #get data of other connection
