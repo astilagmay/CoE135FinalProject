@@ -52,27 +52,34 @@ def tcp_sender(binary, address, sock, i, lock):
 #sender subprocess
 def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
+    #lock.acquire()
+
     #start subprocess
     print("[TCP TRANSFER SENDER %d] start" % proc_num)
 
     #make socket and connect
-    tcp_port = 10000 + i
+    tcp_port = 10000 + proc_num
 
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_address = address
 
+    # while True:
     try:
         tcp_sock.connect((tcp_address, tcp_port)) 
+        send_message("READY", tcp_sock)
+        print("[TCP TRANSFER SENDER %d] connected" % proc_num)
 
     #ip is offline
     except Exception as e:
-        print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (i, tcp_address, tcp_port, e))
+        print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (proc_num, tcp_address, tcp_port, e))
         
         #finally:
 
     #end subprocess
     print("[TCP TRANSFER SENDER %d] closing" % proc_num)
     tcp_sock.close()  
+
+    #lock.release()
 
 #data receiver
 def tcp_receiver(q, address, i, lock):
@@ -92,12 +99,17 @@ def tcp_transfer_r(client_address, proc_num, lock):
 
     tcp_sock.listen(1)
 
-    connection, client_address = tcp_sock.accept()
+    while True:
+        connection, client_address = tcp_sock.accept()
+        
+        data = recv_message(tcp_sock)
 
-    #get data of other connection
-    print("\n[TCP TRANSFER RECEIVER %d] connected" %proc_num)
+        if data == "READY":
+            #get data of other connection
+            print("\n[TCP TRANSFER RECEIVER %d] connected" %proc_num)
+            break
 
-    #DATA TRANSFER
+    #data transfer
 
     #end subprocess
     print("[TCP TRANSFER RECEIVER %d] closing" % proc_num)
