@@ -58,25 +58,22 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
     #make socket
     tcp_port = 10000 + i
-    print(tcp_port)
 
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_address = address
 
     try:
         tcp_sock.connect((tcp_address, tcp_port)) 
+        print("[TCP TRANSFER SENDER %d] connected to port %d" % (i, tcp_port))
 
     #ip is offline
     except Exception as e:
-        print("[UDP LISTENER] %s:%d: Exception %s" % (tcp_address, tcp_port, e))
+        print("[TCP TRANSFER SENDER] %s:%d: Exception %s" % (tcp_address, tcp_port, e))
     
     finally:
         tcp_sock.close()  
 
-    print("[TCP TRANSFER SENDER %d] connected to port %d" % (i, tcp_port))
-
-    #end subprocess
-    # print("[TCP TRANSFER SENDER %d] All %s chunks sent" % (proc_num, filename))
+    
     lock.release()
 
 #data receiver
@@ -86,9 +83,9 @@ def tcp_receiver(q, address, i, lock):
 #receiver subprocess
 def tcp_transfer_r(client_address, proc_num, lock):
 
-    #end subprocess
-    print("[TCP TRANSFER RECEIVER %d] %s transfer done" % (proc_num,  filename))
+    lock.acquire()
 
+    tcp_port = 10000 + proc_num
 
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_sock.bind((get_localip(), tcp_port))
@@ -98,7 +95,7 @@ def tcp_transfer_r(client_address, proc_num, lock):
     connection, client_address = tcp_sock.accept()
 
     #get data of other connection
-    print("\n[TCP LISTENER] Connection from ", end="")
+    print("\n[TCP TRANSFER RECEIVER %d] Connection from ", end="")
     print(client_address)
 
     connection.close()
