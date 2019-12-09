@@ -1,4 +1,4 @@
-from socket import *
+import socket
 from multiprocessing import Process, Queue, Lock
 import os
 import sys
@@ -6,7 +6,7 @@ import struct
 
 #gets local ip
 def get_localip():
-    s = socket(AF_INET, SOCK_DGRAM)
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     localip = s.getsockname()[0]
     s.close()
@@ -51,7 +51,7 @@ def tcp_sender(binary, address, socket, i, lock):
 
     tcp_port = 10000 + i
 
-    tcp_sock = socket()
+    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_address = address
 
     try:
@@ -131,7 +131,7 @@ def tcp_receiver(q, address, i, lock):
     tcp_port = 10000 + i
 
     #bind to local address
-    tcp_sock = socket(AF_INET, SOCK_STREAM)
+    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_sock.bind((get_localip(), tcp_port))
 
     #listen for incoming connections
@@ -230,7 +230,7 @@ def tcp_listener(tcp_queue):
     process_list = []
 
     #bind to local address
-    tcp_sock = socket(AF_INET, SOCK_STREAM)
+    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_sock.bind((get_localip(), tcp_port))
 
     #listen for incoming connections
@@ -286,7 +286,7 @@ def udp_listener(udp_queue):
     tcp_port = 8080
 
     #bind to local address
-    udp_sock = socket(AF_INET, SOCK_DGRAM)
+    udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_sock.bind(('', udp_port))
 
     #receive from broadcast
@@ -306,7 +306,7 @@ def udp_listener(udp_queue):
 
             #send TCP handshake
             if (data.decode() != None):
-                    tcp_sock = socket()
+                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     tcp_address = address[0]
 
                     try:
@@ -342,9 +342,9 @@ def check_iplist(queue):
 #sends broadcast packets
 def udp_broadcast():
     udp_port = 8000
-    bsocket = socket(AF_INET, SOCK_DGRAM)
-    bsocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    bsocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    bsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    bsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    bsocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     bsocket.sendto('UDP Broadcast'.encode(), ('255.255.255.255', udp_port))
 
 if __name__ == '__main__':
@@ -444,7 +444,7 @@ if __name__ == '__main__':
 
                 #file transfer start
                 else:
-                    tcp_sock = socket()
+                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     address = ip_list[ip_choice]
 
                     try:
