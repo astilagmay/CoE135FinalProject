@@ -53,7 +53,7 @@ def tcp_sender(binary, address, sock, i, lock):
 def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
     #start subprocess
-    lock.acquire()
+    # lock.acquire()
     print("[TCP TRANSFER SENDER %d] Start" % proc_num)
 
     #make socket
@@ -64,17 +64,16 @@ def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
     try:
         tcp_sock.connect((tcp_address, tcp_port)) 
-        print("[TCP TRANSFER SENDER %d] connected to port %d" % (i, tcp_port))
+        send_message("Hi", tcp_sock)
 
     #ip is offline
     except Exception as e:
         print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (i, tcp_address, tcp_port, e))
-    
-    finally:
-        tcp_sock.close()  
+        
+        #finally:
 
-    
-    lock.release()
+    tcp_sock.close()  
+    # lock.release()
 
 #data receiver
 def tcp_receiver(q, address, i, lock):
@@ -83,12 +82,12 @@ def tcp_receiver(q, address, i, lock):
 #receiver subprocess
 def tcp_transfer_r(client_address, proc_num, lock):
 
-    lock.acquire()
+    print("[TCP TRANSFER RECEIVER %d] Start" % proc_num)
 
     tcp_port = 10000 + proc_num
 
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_sock.bind((get_localip(), tcp_port))
+    tcp_sock.bind('', tcp_port))
 
     tcp_sock.listen(1)
 
@@ -99,8 +98,6 @@ def tcp_transfer_r(client_address, proc_num, lock):
     print(client_address)
 
     connection.close()
-
-    lock.release()
 
 #constant tcp listener
 def tcp_listener(tcp_queue):
