@@ -84,7 +84,7 @@ def tcp_transfer_s(address, proc_num, filename, lock):
         tcp_sock.connect((tcp_address, tcp_port)) 
         send_message("READY", tcp_sock)
         print("[TCP TRANSFER SENDER %d] connected" % proc_num)
-        start_time = timer()
+        start_time = timer(number = 1000)
 
         #send file
         chunk_list = []
@@ -122,7 +122,7 @@ def tcp_transfer_s(address, proc_num, filename, lock):
 
         #end subprocess
         elapsed_time = timer() - start_time
-        print("[TCP TRANSFER SENDER %d] ALL CHUNKS SENT: %s | Elapsed time: %ds" % (proc_num, filename, elapsed_time))
+        print("[TCP TRANSFER SENDER %d] ALL CHUNKS SENT: %s | Elapsed time: %.2fs" % (proc_num, filename, elapsed_time))
         tcp_sock.close()  
 
     #ip is offline
@@ -236,7 +236,7 @@ def tcp_transfer_r(client_address, proc_num, lock):
 
         #end subprocess
         elapsed_time = timer() - start_time
-        print("[TCP TRANSFER RECEIVER %d]TRANSFER COMPLETE: %s  | Elapsed time: %ds" % (proc_num, filename, elapsed_time))
+        print("[TCP TRANSFER RECEIVER %d]TRANSFER COMPLETE: %s  | Elapsed time: %.2fs" % (proc_num, filename, elapsed_time))
         connection.close()
 
     except Exception as e:
