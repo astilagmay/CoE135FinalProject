@@ -306,7 +306,7 @@ def udp_listener(udp_queue):
 
             #send TCP handshake
             if (data.decode() != None):
-                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    tcp_sock = socket.socket()
                     tcp_address = address[0]
 
                     try:
@@ -444,7 +444,7 @@ if __name__ == '__main__':
 
                 #file transfer start
                 else:
-                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    tcp_sock = socket.socket()
                     address = ip_list[ip_choice]
 
                     try:
