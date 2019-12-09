@@ -1,4 +1,4 @@
-import socket
+from socket import *
 from multiprocessing import Process, Queue, Lock
 import os
 import sys
@@ -6,7 +6,7 @@ import struct
 
 #gets local ip
 def get_localip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s = socket(AF_INET, SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     localip = s.getsockname()[0]
     s.close()
@@ -14,25 +14,25 @@ def get_localip():
     return localip
 
 #send message protocol
-def send_message(message, sock):
+def send_message(message, socket):
     msg_length = len(message)
-    sock.send(struct.pack('!I', msg_length))
-    sock.sendall(message.encode())
+    socket.send(struct.pack('!I', msg_length))
+    socket.sendall(message.encode())
 
     #print("[MAIN] sent ", message)
 
 #recieve message protocol
-def recv_message(sock):
+def recv_message(socket):
 
     #get bytes of message
-    msg_length = sock.recv(4)
+    msg_length = socket.recv(4)
     msg_length, = struct.unpack('!I', msg_length)
     #print(msg_length)
 
     #get message
     message = b''
     while msg_length:
-        data = sock.recv(msg_length)
+        data = socket.recv(msg_length)
         
         if not data:
             break
@@ -46,51 +46,34 @@ def recv_message(sock):
 
 
 #data sender
-def tcp_sender(binary, sock, i, lock):
-    #lock.acquire()
+def tcp_sender(binary, socket, i, lock):
+    lock.acquire()
 
     msg_length = len(binary)
-    sock.send(struct.pack('!I', msg_length))
-    sock.sendall(binary)
+    socket.send(struct.pack('!I', msg_length))
+    socket.sendall(binary)
 
-    sock.close()
-    #lock.release()
+    #print("[SENDER %d] DONE" % i, len(binary))
+    socket.close()
+    lock.release()
 
 #sender subprocess
-def tcp_transfer_s(address, proc_num, filename, lock):
+def tcp_transfer_s(socket, address, proc_num, filename, lock):
 
-    #lock.acquire()
-
-    #start subprocess
-    # print("[TCP TRANSFER SENDER %d] start" % proc_num)
-
-    #make socket and connect
-    tcp_port = 10000 + proc_num
-
-    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_address = address
-
-    #send handshake
-    try:
-        tcp_sock.connect((tcp_address, tcp_port)) 
-        send_message("READY", tcp_sock)
-        print("[TCP TRANSFER SENDER %d] connected" % proc_num)
-
-    #ip is offline
-    except Exception as e:
-        print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (proc_num, tcp_address, tcp_port, e))
-        
-
-    #send file
+    #initialize variables
     chunk_list = []
     process_list = []
     read_size = 131072
-
+    
+    #start subprocess
     lock.acquire()
+    print("[TCP TRANSFER SENDER %d] Start" % proc_num)
 
+    #send filename
     os.chdir("./Files")
-    send_message(filename, tcp_sock)
+    send_message(filename, socket)
 
+    #process chunks
     f = open(filename, "rb")
 
     data = f.read(read_size)
@@ -98,39 +81,48 @@ def tcp_transfer_s(address, proc_num, filename, lock):
         chunk_list.append(data)
         data = f.read(read_size)
 
-    send_message(str(len(chunk_list)), tcp_sock)    
+
+
+    print("[TCP TRANSFER SENDER %d] Chunk numbers:" % proc_num, len(chunk_list))
+
+    #send chunk numbers
+    send_message(str(len(chunk_list)), socket)
 
     lock2 = Lock()
 
+    #send chunks
     for i, binary in enumerate(chunk_list):
-        p_send = Process(target = tcp_sender, args = (binary, tcp_sock, i, lock2))
+        p_send = Process(target = tcp_sender, args = (binary, socket, i, lock2))
         p_send.start()
         process_list.append(p_send)
 
     for p in process_list:
         p.join()
 
-    f.close()    
+    #check if received
+
+
+    #close file
+    f.close()
+
 
     #end subprocess
-    # print("[TCP TRANSFER SENDER %d] closing" % proc_num)
-    tcp_sock.close()  
-
-    #lock.release()
+    print("[TCP TRANSFER SENDER %d] All %s chunks sent" % (proc_num, filename))
+    lock.release()
 
 #data receiver
-def tcp_receiver(q, sock, i, lock):
+def tcp_receiver(q, socket, i, lock):
     lock.acquire()
-
-    print("[TCP TRANSFER RECEIVER %d] receiving" %i)
-
-    msg_length = sock.recv(4)
+    #get bytes of message
+    msg_length = socket.recv(4)
     msg_length, = struct.unpack('!I', msg_length)
+    #print(msg_length)
 
+    #get message
     message = b''
     while msg_length:
-        data = sock.recv(msg_length)
-
+        data = socket.recv(msg_length)
+        
         if not data:
             break
 
@@ -139,89 +131,65 @@ def tcp_receiver(q, sock, i, lock):
 
     q.put(message)
 
-    sock.close()
-
-
-    print("[TCP TRANSFER RECEIVER %d] received" %i)
-    lock.release()
+    #print("[RECEIVER %d] DONE" % i, len(message))
+    socket.close()
+    lock.release()    
 
 #receiver subprocess
-def tcp_transfer_r(client_address, proc_num, lock):
-
-    #start subprocess
-    # print("[TCP TRANSFER RECEIVER %d] start" % proc_num)
+def tcp_transfer_r(connection, client_address, proc_num, lock):
 
     process_list = []
     chunk_list = []
 
-    #create socket and connect
-    tcp_port = 10000 + proc_num
+    #start subprocess
+    lock.acquire()
+    print("[TCP TRANSFER RECEIVER %d] Start" % proc_num)
 
-    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #get filename
+    filename = recv_message(connection)
+    #print("[TCP TRANSFER RECEIVER %d] filename: " % proc_num, filename)
 
-    try:
-        tcp_sock.bind(('', tcp_port))
+    #get chunk numbers
+    chunk_nums = recv_message(connection)
+    #print("[TCP TRANSFER RECEIVER %d] chunk_nums: " % proc_num, chunk_nums)
 
-        tcp_sock.listen(1)
+    chunk_nums = int(chunk_nums)
 
-        #receive handshake
-        while True:
-            connection, client_address = tcp_sock.accept()
-            
-            data = recv_message(connection)
+    q = Queue()
+    lock2 = Lock()
 
-            if data == "READY":
-                #get data of other connection1
-                print("[TCP TRANSFER RECEIVER %d] connected" %proc_num)
-                break
+    #get chunks
+    for i in range(chunk_nums):
+        p_send = Process(target = tcp_receiver, args = (q, connection, i, lock2))
+        p_send.start()
+        process_list.append(p_send)
 
-        #receive file
-        filename = recv_message(connection)
+    chunk_count = 0
 
-        #get number of chunks
-        chunk_nums = recv_message(connection)
-        chunk_nums = int(chunk_nums)
+    while True:
+        if chunk_count == chunk_nums:
+            break
 
-        print("received chunks and filename~")
+        chunk_list.append(q.get())
+        chunk_count = chunk_count + 1
 
-        q = Queue()
-        lock2 = Lock()
+    for p in process_list:
+        p.join()
+       
+    #tell received
 
-        #make processes
-        for i in range(chunk_nums):
-            p_recv = Process(target = tcp_receiver, args = (q, connection, i, lock2))
-            p_recv.start()
-            process_list.append(p_recv)
+    #write to file1
+    f = open("z-" + filename, "wb")
+    
+    for data in chunk_list:
+        f.write(data)
+    
+    f.close()
 
-        chunk_count = 0
-
-        #get from queue
-        while True:
-            if chunk_count == chunk_nums:
-                break
-
-            chunk_list.append(q.get())
-            chunk_count = chunk_count + 1
-
-        for p in process_list:
-            p.join()
-
-        print("Writing chunk")
-
-        #write to file
-        f = open("z-" + filename, "wb")
-
-        for data in chunk_list:
-            f.write(data)
-
-        f.close()
-
-        #end subprocess
-        print("[TCP TRANSFER RECEIVER %d] %s transfer done" % (proc_num, filename))
-        connection.close()
-
-    except:
-        pass
+    #end subprocess
+    print("[TCP TRANSFER RECEIVER %d] %s transfer done" % (proc_num,  filename))
+    connection.close
+    lock.release()
 
 #constant tcp listener
 def tcp_listener(tcp_queue):
@@ -232,7 +200,7 @@ def tcp_listener(tcp_queue):
     process_list = []
 
     #bind to local address
-    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp_sock = socket(AF_INET, SOCK_STREAM)
     tcp_sock.bind((get_localip(), tcp_port))
 
     #listen for incoming connections
@@ -255,8 +223,6 @@ def tcp_listener(tcp_queue):
             #UDP handshake
             if data == "HANDSHAKE FROM UDP":
                 ip_list.append(client_address[0])
-                #put ip list in main
-                tcp_queue.put(ip_list)
 
             #file transfer
             elif "FILE TRANSFER" in data:
@@ -267,13 +233,16 @@ def tcp_listener(tcp_queue):
 
                 #make subprocesses
                 for i in range(num_files):
-                    p_transfer = Process(target = tcp_transfer_r, args = (client_address, i, lock))
+                    p_transfer = Process(target = tcp_transfer_r, args = (connection , client_address, i, lock))
                     process_list.append(p_transfer)
                     p_transfer.start()
 
                 #terminate subprocesses
                 for proc in process_list:
                     proc.join()
+
+            #put ip list in main
+            tcp_queue.put(ip_list)
 
         #close connection
         finally:
@@ -287,7 +256,7 @@ def udp_listener(udp_queue):
     tcp_port = 8080
 
     #bind to local address
-    udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udp_sock = socket(AF_INET, SOCK_DGRAM)
     udp_sock.bind(('', udp_port))
 
     #receive from broadcast
@@ -307,7 +276,7 @@ def udp_listener(udp_queue):
 
             #send TCP handshake
             if (data.decode() != None):
-                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    tcp_sock = socket()
                     tcp_address = address[0]
 
                     try:
@@ -343,9 +312,9 @@ def check_iplist(queue):
 #sends broadcast packets
 def udp_broadcast():
     udp_port = 8000
-    bsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    bsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    bsocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    bsocket = socket(AF_INET, SOCK_DGRAM)
+    bsocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+    bsocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
     bsocket.sendto('UDP Broadcast'.encode(), ('255.255.255.255', udp_port))
 
 if __name__ == '__main__':
@@ -445,7 +414,7 @@ if __name__ == '__main__':
 
                 #file transfer start
                 else:
-                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    tcp_sock = socket()
                     address = ip_list[ip_choice]
 
                     try:
@@ -457,7 +426,7 @@ if __name__ == '__main__':
 
                         #make subprocesses
                         for i in range(len(file_list)):
-                            p_transfer = Process(target = tcp_transfer_s, args = (address, i, file_list[i], lock))
+                            p_transfer = Process(target = tcp_transfer_s, args = (tcp_sock, address, i, file_list[i], lock))
                             process_list.append(p_transfer)
                             p_transfer.start()
 
