@@ -87,7 +87,7 @@ def tcp_transfer_r(client_address, proc_num, lock):
     tcp_port = 10000 + proc_num
 
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_sock.bind('', tcp_port))
+    tcp_sock.bind(('', tcp_port))
 
     tcp_sock.listen(1)
 
