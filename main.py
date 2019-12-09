@@ -106,7 +106,7 @@ def tcp_transfer_r(client_address, proc_num, lock):
 
         if data == "READY":
             #get data of other connection
-            print("\n[TCP TRANSFER RECEIVER %d] connected" %proc_num)
+            print("[TCP TRANSFER RECEIVER %d] connected" %proc_num)
             break
 
     #data transfer
