@@ -46,18 +46,11 @@ def recv_message(sock):
 
 
 #data sender
-def tcp_sender(binary, sock, i, lock):
-    lock.acquire()
-
-    msg_length = len(binary)
-    sock.send(struct.pack('!I', msg_length))
-    sock.sendall(binary)
-
-    sock.close()
-    lock.release()
+def tcp_sender(binary, address, sock, i, lock):
+    pass
 
 #sender subprocess
-def tcp_transfer_s(address, proc_num, filename, lock):
+def tcp_transfer_s(sock, address, proc_num, filename, lock):
 
     #lock.acquire()
 
@@ -82,35 +75,6 @@ def tcp_transfer_s(address, proc_num, filename, lock):
         
 
     #send file
-    chunk_list = []
-    process_list = []
-    read_size = 131072
-
-    lock.acquire()
-
-    os.chdir("./Files")
-    send_message(filename, tcp_sock)
-
-    f = open(filename, "rb")
-
-    data = f.read(read_size)
-    while data:
-        chunk_list.append(data)
-        data = f.read(read_size)
-
-    send_message(str(len(chunk_list)), tcp_sock)    
-
-    lock2 = Lock()
-
-    for i, binary in enumerate(chunk_list):
-        p_send = Process(target = tcp_sender, args = (binary, tcp_sock, i, lock2))
-        p_send.start()
-        process_list.append(p_send)
-
-    for p in process_list:
-        p.join()
-
-    f.close()    
 
     #end subprocess
     # print("[TCP TRANSFER SENDER %d] closing" % proc_num)
@@ -119,35 +83,14 @@ def tcp_transfer_s(address, proc_num, filename, lock):
     #lock.release()
 
 #data receiver
-def tcp_receiver(q, sock, i, lock):
-    lock.acquire()
-
-    msg_length = sock.recv(4)
-    msg_length, = struct.unpack('!I', msg_length)
-
-    message = b''
-    while msg_length:
-        data = sock.recv(msg_length)
-
-        if not data:
-            break
-
-        message += data
-        msg_length -= len(data)
-
-    q.put(message)
-
-    sock.close()
-    lock.release    
+def tcp_receiver(q, address, i, lock):
+    pass 
 
 #receiver subprocess
 def tcp_transfer_r(client_address, proc_num, lock):
 
     #start subprocess
     # print("[TCP TRANSFER RECEIVER %d] start" % proc_num)
-
-    process_list = []
-    chunk_list = []
 
     #create socket and connect
     tcp_port = 10000 + proc_num
@@ -169,44 +112,9 @@ def tcp_transfer_r(client_address, proc_num, lock):
             break
 
     #receive file
-    filename = recv_message(connection)
-
-    #get number of chunks
-    chunk_nums = recv_message(connection)
-    chunk_nums = int(chunk_nums)
-
-    q = Queue()
-    lock2 = Lock()
-
-    #make processes
-    for i in range(chunk_nums):
-        p_recv = Process(target = tcp_receiver, args = (q, connection, i, lock2))
-        p_recv.start()
-        process_list.append(p_recv)
-
-    chunk_count = 0
-
-    #get from queue
-    while True:
-        if chunk_count == chunk_nums:
-            break
-
-        chunk_list.append(q.get())
-        chunk_count = chunk_count + 1
-
-    for p in process_list:
-        p.join()
-
-    #write to file
-    f = open("z-" + filename, "wb")
-
-    for data in chunk_list:
-        f.write(data)
-
-    f.close()
 
     #end subprocess
-    print("[TCP TRANSFER RECEIVER %d] %s transfer done" % (proc_num, filename))
+    # print("[TCP TRANSFER RECEIVER %d] closing" % proc_num)
     connection.close()
 
 #constant tcp listener
@@ -443,7 +351,7 @@ if __name__ == '__main__':
 
                         #make subprocesses
                         for i in range(len(file_list)):
-                            p_transfer = Process(target = tcp_transfer_s, args = (address, i, file_list[i], lock))
+                            p_transfer = Process(target = tcp_transfer_s, args = (tcp_sock, address, i, file_list[i], lock))
                             process_list.append(p_transfer)
                             p_transfer.start()
 
