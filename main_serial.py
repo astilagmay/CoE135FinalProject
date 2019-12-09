@@ -1,7 +1,5 @@
 import socket
-from threading import Thread, Lock
-from multiprocessing import Process, Lock, Queue
-import queue
+from multiprocessing import Process, Queue, Lock
 import os
 import sys
 import struct
@@ -72,8 +70,6 @@ def tcp_sender(binary, sock, i, lock):
 #sender subprocess
 def tcp_transfer_s(address, proc_num, filename, lock):
 
-    # lock.acquire()
-
     #start subprocess
     # print("[TCP TRANSFER SENDER %d] start" % proc_num)
 
@@ -95,9 +91,8 @@ def tcp_transfer_s(address, proc_num, filename, lock):
         process_list = []
         read_size = 2**24
 
-        # print(os.getcwd())
-
         #send filename
+        os.chdir("./Files")
         send_message(filename, tcp_sock)
 
         f = open(filename, "rb")
@@ -116,7 +111,7 @@ def tcp_transfer_s(address, proc_num, filename, lock):
         lock2 = Lock()
 
         for i, binary in enumerate(chunk_list):
-            p_send = Thread(target = tcp_sender, args = (binary, tcp_sock, i, lock2))
+            p_send = Process(target = tcp_sender, args = (binary, tcp_sock, i, lock2))
             p_send.start()
             process_list.append(p_send)
 
@@ -134,7 +129,7 @@ def tcp_transfer_s(address, proc_num, filename, lock):
     except Exception as e:
         print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (proc_num, tcp_address, tcp_port, e))
         
-    # lock.release()
+    #lock.release()
 
 #data receiver
 def tcp_receiver(q, sock, i, lock):
@@ -206,12 +201,12 @@ def tcp_transfer_r(client_address, proc_num, lock):
         chunk_nums = recv_message(connection)
         chunk_nums = int(chunk_nums)
 
-        q = queue.Queue()
+        q = Queue()
         lock2 = Lock()
 
         #make processes
         for i in range(chunk_nums):
-            p_recv = Thread(target = tcp_receiver, args = (q, connection, i, lock2))
+            p_recv = Process(target = tcp_receiver, args = (q, connection, i, lock2))
             p_recv.start()
             process_list.append(p_recv)
 
@@ -289,7 +284,7 @@ def tcp_listener(tcp_queue):
 
                 #make subprocesses
                 for i in range(num_files):
-                    p_transfer = Thread(target = tcp_transfer_r, args = (client_address, i, lock))
+                    p_transfer = Process(target = tcp_transfer_r, args = (client_address, i, lock))
                     process_list.append(p_transfer)
                     p_transfer.start()
 
@@ -476,11 +471,10 @@ if __name__ == '__main__':
                         send_message(message, tcp_sock)
 
                         lock = Lock()
-                        os.chdir("./Files")
 
                         #make subprocesses
                         for i in range(len(file_list)):
-                            p_transfer = Thread(target = tcp_transfer_s, args = (address, i, file_list[i], lock))
+                            p_transfer = Process(target = tcp_transfer_s, args = (address, i, file_list[i], lock))
                             process_list.append(p_transfer)
                             p_transfer.start()
 
@@ -495,6 +489,8 @@ if __name__ == '__main__':
                     
                     finally:
                         tcp_sock.close()  
+
+            os.chdir("./coe135project")
 
         #view network IPs - DONE
         elif (option == 2):
@@ -523,10 +519,13 @@ if __name__ == '__main__':
         elif (option == 3):
 
             print("\nClosing processes")
-            p_udp.join()
-            p_tcp.join()
+            
             p_udp.terminate()
-            p_tcp.terminate
+            p_udp.join()
+
+            p_tcp.terminate()
+            p_tcp.join()
+            
             print("Exiting program")
             exit()
 
