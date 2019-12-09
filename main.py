@@ -3,6 +3,7 @@ from multiprocessing import Process, Queue, Lock
 import os
 import sys
 import struct
+from timeit import default_timer as timer
 
 #gets local ip
 def get_localip():
@@ -83,6 +84,7 @@ def tcp_transfer_s(address, proc_num, filename, lock):
         tcp_sock.connect((tcp_address, tcp_port)) 
         send_message("READY", tcp_sock)
         print("[TCP TRANSFER SENDER %d] connected" % proc_num)
+        start_time = timer()
 
         #send file
         chunk_list = []
@@ -119,7 +121,8 @@ def tcp_transfer_s(address, proc_num, filename, lock):
         f.close()    
 
         #end subprocess
-        # print("[TCP TRANSFER SENDER %d] closing" % proc_num)
+        elapsed_time = timer() - start_time
+        print("[TCP TRANSFER SENDER %d] ALL CHUNKS SENT: %s | Elapsed time: %ds" % (proc_num, filename, elapsed_time))
         tcp_sock.close()  
 
     #ip is offline
@@ -191,6 +194,7 @@ def tcp_transfer_r(client_address, proc_num, lock):
             if data == "READY":
                 #get data of other connection1
                 print("[TCP TRANSFER RECEIVER %d] connected" %proc_num)
+                start_time = timer()
                 break
 
         #receive file
@@ -231,11 +235,12 @@ def tcp_transfer_r(client_address, proc_num, lock):
         f.close()
 
         #end subprocess
-        print("[TCP TRANSFER RECEIVER %d] %s transfer done" % (proc_num, filename))
+        elapsed_time = timer() - start_time
+        print("[TCP TRANSFER RECEIVER %d]TRANSFER COMPLETE: %s  | Elapsed time: %ds" % (proc_num, filename, elapsed_time))
         connection.close()
 
     except Exception as e:
-        print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (proc_num, tcp_address, tcp_port, e))
+        print("[TCP TRANSFER SENDER %d] %s:%d: Exception %s" % (proc_num, client_address, tcp_port, e))
 
 #constant tcp listener
 def tcp_listener(tcp_queue):
