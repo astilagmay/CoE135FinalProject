@@ -38,15 +38,21 @@ Format: send_time | receive_time
 ### Serial (Single Socket)
 
 1 MB file:  0.29s | 0.28s
+
 100 MB file:    21.80s | 20.78s
+
 1GB file:   175.55s | 177.48s
+
 30 files (8-12MB each): 67.28s | 66.853s
 
 ### Multiprocess (Multiple Sockets)
 
 1 MB file:  0.24s | 0.28ss
+
 100 MB file:    49.38s | 50.47s
+
 1GB file:   223.32s | 224.96s
+
 30 files (8-12MB each): 1460.06s | 1489.32s
 
 
