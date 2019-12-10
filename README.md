@@ -1,6 +1,6 @@
 # AstiDrop
 
-A portable cross-platform program that replicates Apple's AirDrop written in Python.
+A portable cross-platform program that replicates Apple's AirDrop written in Python. Explores the advantages, disadvantages, and the application of multithreading/multiprocessing in computer programs.
 
 ## Files and Purpose
 
@@ -16,76 +16,39 @@ Benchmarks for Serial Program (Multiple and Single Files)
 * serial_bench_multi.py
 * serial_bench_single.py
 
+## Constraints
+
+The program only works for devices on the same local network. The program was tested on Python 3.6.5 and Python 3.8. The program neglects Firewall, UDP Broadcast, and other constraints. The program also has a primitive directory menu and traversal thus it assumes that the files to be sent are in a specific folder in a specific directory.
+
 ## Usage
 
-The program only works for devices on 
+Put all files to be sent in a folder named "Files". This is required to be in the same directory as the repository folder "coe135project".
 
+Simply run 
+```
+python3 main.py
+```
 
 ## Benchmarks
 
-### Serial Program
+Tested on the same network without other devices connected to it.
 
-What things you need to install the software and how to install them
+Format: send_time | receive_time
 
-```
-Give examples
-```
+### Serial (Single Socket)
 
-### Installing
+1 MB file:  0.29s | 0.28s
+100 MB file:    21.80s | 20.78s
+1GB file:   175.55s | 177.48s
+30 files (8-12MB each): 67.28s | 66.853s
 
-A step by step series of examples that tell you how to get a development env running
+### Multiprocess (Multiple Sockets)
 
-Say what the step will be
+1 MB file:  0.24s | 0.28ss
+100 MB file:    49.38s | 50.47s
+1GB file:   223.32s | 224.96s
+30 files (8-12MB each): 1460.06s | 1489.32s
 
-```
-Give the example
-```
-
-And repeat
-
-```
-until finished
-```
-
-End with an example of getting some data out of the system or using it for a little demo
-
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
-## Built With
-
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
-
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
 
 ## Authors
 
