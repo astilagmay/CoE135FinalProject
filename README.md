@@ -47,7 +47,7 @@ Format: send_time | receive_time
 
 ### Multiprocess (Multiple Sockets)
 
-* 1 MB file:  0.24s | 0.28ss
+* 1 MB file:  0.24s | 0.28s
 
 * 100 MB file:    49.38s | 50.47s
 
