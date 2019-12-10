@@ -2,11 +2,28 @@
 
 A portable cross-platform program that replicates Apple's AirDrop written in Python.
 
-## Getting Started
+## Files and Purpose
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+Main Programs:
+* main.py - the main program, uses one socket per subprocess
+* main_serial.py - a variant of the main program that uses only one socket
 
-### Prerequisites
+Benchmarks for Multiprocessed Program (Multiple and Single Files)
+* multip_bench_multi.py
+* multip_bench_single.py
+
+Benchmarks for Serial Program (Multiple and Single Files)
+* serial_bench_multi.py
+* serial_bench_single.py
+
+## Usage
+
+The program only works for devices on 
+
+
+## Benchmarks
+
+### Serial Program
 
 What things you need to install the software and how to install them
 
@@ -72,16 +89,11 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+* **Arnold Constantin B. Lagmay**
 
 ## Acknowledgments
 
+Special thanks to:
 * StackOverflow
 * Python Documentation
 * Beej's Guide To Network Programming
