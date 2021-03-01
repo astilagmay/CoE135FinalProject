@@ -1,6 +1,6 @@
-# AstiDrop
+# Python AirDrop
 
-A portable cross-platform program that replicates Apple's AirDrop written in Python. Explores the advantages, disadvantages, and the application of multithreading/multiprocessing in computer programs.
+A portable cross-platform program that replicates Apple's AirDrop written in Python. Explores the advantages, disadvantages, and the application of Python multithreading/multiprocessing in computer programs.
 
 ## Files and Purpose
 
@@ -18,7 +18,7 @@ Benchmarks for Serial Program (Multiple and Single Files)
 
 ## Constraints
 
-The program only works for devices on the same local network. The program was tested on Python 3.6.5 and Python 3.8. The program neglects Firewall, UDP Broadcast, and other constraints. The program also has a primitive directory menu and traversal thus it assumes that the files to be sent are in a specific folder in a specific directory.
+The program only works for devices on the same local network. The program was tested on Python 3.6.5 and Python 3.8. The program neglects Firewall, UDP Broadcast, and other constraints. The program also has a primitive directory menu and traversal, thus it assumes that the files to be sent are in a specific folder in a specific directory.
 
 ## Usage
 
